@@ -43,11 +43,22 @@ def extract_text_from_pdf(base64_content: str) -> str:
             "max_tokens": 4000
         }
         
+        # Check if proxy is configured
+        proxy_url = os.getenv('PROXY_URL')
+        proxies = {}
+        if proxy_url:
+            proxies = {
+                'http': proxy_url,
+                'https': proxy_url
+            }
+            print("[INFO] Using proxy for OpenAI request")
+        
         response = requests.post(
             "https://api.openai.com/v1/chat/completions",
             headers=headers,
             json=data,
-            timeout=30
+            timeout=30,
+            proxies=proxies
         )
         
         if response.status_code == 200:
@@ -79,11 +90,22 @@ def create_embedding(text: str) -> Optional[List[float]]:
             "input": text[:8000]  # Limit text length
         }
         
+        # Check if proxy is configured
+        proxy_url = os.getenv('PROXY_URL')
+        proxies = {}
+        if proxy_url:
+            proxies = {
+                'http': proxy_url,
+                'https': proxy_url
+            }
+            print("[INFO] Using proxy for OpenAI embedding request")
+        
         response = requests.post(
             "https://api.openai.com/v1/embeddings",
             headers=headers,
             json=data,
-            timeout=10
+            timeout=10,
+            proxies=proxies
         )
         
         if response.status_code == 200:
@@ -96,6 +118,55 @@ def create_embedding(text: str) -> Optional[List[float]]:
     except Exception as e:
         print(f"[ERROR] Failed to create embedding: {e}")
         return None
+
+def search_similar_documents(query_embedding: List[float], user_id: int, limit: int = 5) -> List[Dict[str, Any]]:
+    """Search for similar documents using cosine similarity"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        # Get all documents with embeddings for this user
+        cursor.execute("""
+            SELECT id, name, content, file_type, created_at, embedding
+            FROM documents 
+            WHERE embedding IS NOT NULL AND user_id = %s
+        """, (user_id,))
+        
+        results = []
+        for row in cursor.fetchall():
+            # Calculate cosine similarity
+            doc_embedding = json.loads(row['embedding'])
+            
+            # Cosine similarity calculation
+            dot_product = sum(a * b for a, b in zip(query_embedding, doc_embedding))
+            magnitude_query = sum(a * a for a in query_embedding) ** 0.5
+            magnitude_doc = sum(a * a for a in doc_embedding) ** 0.5
+            
+            if magnitude_query > 0 and magnitude_doc > 0:
+                similarity = dot_product / (magnitude_query * magnitude_doc)
+            else:
+                similarity = 0
+            
+            results.append({
+                'id': row['id'],
+                'name': row['name'],
+                'content': row['content'],
+                'file_type': row['file_type'],
+                'created_at': row['created_at'].isoformat() if row['created_at'] else None,
+                'similarity_score': similarity
+            })
+        
+        # Sort by similarity and return top results
+        results.sort(key=lambda x: x['similarity_score'], reverse=True)
+        results = results[:limit]
+        
+        cursor.close()
+        conn.close()
+        return results
+        
+    except Exception as e:
+        print(f"[ERROR] Search failed: {e}")
+        return []
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """

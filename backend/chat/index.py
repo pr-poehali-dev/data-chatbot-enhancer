@@ -1,6 +1,8 @@
 import json
 import os
 import requests
+import psycopg2
+import psycopg2.extras
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 
@@ -11,16 +13,121 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1)
     conversation_history: List[ChatMessage] = Field(default_factory=list)
-    documents: List[str] = Field(default_factory=list)
+    user_id: int = Field(..., gt=0)
+
+def get_db_connection():
+    """Get database connection using environment variable"""
+    database_url = os.getenv('DATABASE_URL')
+    if not database_url:
+        raise Exception("DATABASE_URL not configured")
+    return psycopg2.connect(database_url)
+
+def create_embedding(text: str) -> Optional[List[float]]:
+    """Create embedding for text query"""
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    if not openai_api_key:
+        return None
+    
+    try:
+        headers = {
+            "Authorization": f"Bearer {openai_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": "text-embedding-3-small",
+            "input": text
+        }
+        
+        # Check if proxy is configured
+        proxy_url = os.getenv('PROXY_URL')
+        proxies = {}
+        if proxy_url:
+            proxies = {
+                'http': proxy_url,
+                'https': proxy_url
+            }
+        
+        response = requests.post(
+            "https://api.openai.com/v1/embeddings",
+            headers=headers,
+            json=data,
+            timeout=10,
+            proxies=proxies
+        )
+        
+        if response.status_code == 200:
+            return response.json()['data'][0]['embedding']
+        else:
+            print(f"[ERROR] OpenAI API error: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"[ERROR] Failed to create embedding: {e}")
+        return None
+
+def search_documents(query: str, user_id: int, limit: int = 5) -> List[Dict[str, Any]]:
+    """Search user documents using vector similarity"""
+    query_embedding = create_embedding(query)
+    if not query_embedding:
+        return []
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        # Get all documents with embeddings for this user
+        cursor.execute("""
+            SELECT id, name, content, embedding
+            FROM documents 
+            WHERE embedding IS NOT NULL AND user_id = %s
+        """, (user_id,))
+        
+        results = []
+        for row in cursor.fetchall():
+            # Calculate cosine similarity
+            doc_embedding = json.loads(row['embedding'])
+            
+            dot_product = sum(a * b for a, b in zip(query_embedding, doc_embedding))
+            magnitude_query = sum(a * a for a in query_embedding) ** 0.5
+            magnitude_doc = sum(a * a for a in doc_embedding) ** 0.5
+            
+            if magnitude_query > 0 and magnitude_doc > 0:
+                similarity = dot_product / (magnitude_query * magnitude_doc)
+            else:
+                similarity = 0
+            
+            # Only include relevant documents (similarity > 0.7)
+            if similarity > 0.7:
+                results.append({
+                    'name': row['name'],
+                    'content': row['content'],
+                    'similarity': similarity
+                })
+        
+        # Sort by similarity and return top results
+        results.sort(key=lambda x: x['similarity'], reverse=True)
+        results = results[:limit]
+        
+        cursor.close()
+        conn.close()
+        return results
+        
+    except Exception as e:
+        print(f"[ERROR] Document search failed: {e}")
+        return []
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
-    Business: Process chat requests with OpenAI ChatGPT API and document context
-    Args: event - dict with httpMethod, body containing message and context
-          context - object with request_id for tracking
-    Returns: HTTP response with AI-generated answer and sources
+    Business: AI chat with semantic search over user documents
+    Args: event - dict with httpMethod, body, headers
+          context - object with request_id
+    Returns: HTTP response with AI answer and sources
     """
     method: str = event.get('httpMethod', 'GET')
+    headers = event.get('headers', {})
+    
+    # Get user ID from header
+    user_id = headers.get('X-User-Id') or headers.get('x-user-id')
     
     # Handle CORS OPTIONS request
     if method == 'OPTIONS':
@@ -29,67 +136,113 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
                 'Access-Control-Max-Age': '86400'
             },
-            'body': ''
+            'body': '',
+            'isBase64Encoded': False
         }
     
     if method != 'POST':
         return {
             'statusCode': 405,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'Method not allowed'})
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': 'Method not allowed'}),
+            'isBase64Encoded': False
+        }
+    
+    if not user_id:
+        return {
+            'statusCode': 401,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': 'Missing X-User-Id header'}),
+            'isBase64Encoded': False
+        }
+    
+    try:
+        user_id = int(user_id)
+    except:
+        return {
+            'statusCode': 400,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': 'Invalid user ID'}),
+            'isBase64Encoded': False
         }
     
     # Parse request body
     try:
         body_data = json.loads(event.get('body', '{}'))
-        chat_req = ChatRequest(**body_data)
+        message = body_data.get('message', '')
+        conversation_history = body_data.get('conversation_history', [])
     except Exception as e:
         return {
             'statusCode': 400,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': f'Invalid request: {str(e)}'})
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': f'Invalid request: {str(e)}'}),
+            'isBase64Encoded': False
         }
     
-    # Get API credentials
+    # Get API key
     openai_api_key = os.getenv('OPENAI_API_KEY')
     if not openai_api_key:
         return {
             'statusCode': 500,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'OpenAI API key not configured'})
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': 'OpenAI API key not configured'}),
+            'isBase64Encoded': False
         }
     
-    # Prepare conversation context
+    # Search relevant documents
+    print(f"[INFO] Searching documents for user {user_id} with query: {message}")
+    relevant_docs = search_documents(message, user_id)
+    
+    # Prepare conversation with context
     messages = []
     
-    # Add system prompt with document context
-    if chat_req.documents:
+    # System prompt with document context
+    if relevant_docs:
+        doc_context = "\n\n".join([
+            f"Document: {doc['name']}\nContent: {doc['content']}"
+            for doc in relevant_docs
+        ])
         system_content = f"""You are a helpful AI assistant with access to the user's personal knowledge base. 
-Use the following documents as context to answer questions:
+Use the following documents from their library to answer questions:
 
-{chr(10).join([f"Document: {doc}" for doc in chat_req.documents])}
+{doc_context}
 
 When answering:
 1. Base your response on the provided documents when relevant
-2. If information isn't in the documents, clearly state that
-3. Be helpful, accurate, and cite which documents you're referencing
-4. Respond in the same language as the user's question"""
-        messages.append({"role": "system", "content": system_content})
+2. If information isn't in the documents, you can provide general knowledge but mention it's not from their documents
+3. Cite which documents you're referencing when using them
+4. Be helpful and accurate
+5. Respond in the same language as the user's question"""
     else:
-        messages.append({
-            "role": "system", 
-            "content": "You are a helpful AI assistant. Answer questions accurately and helpfully."
-        })
+        system_content = """You are a helpful AI assistant. The user has a document library, but no relevant documents were found for this query. 
+Answer based on your general knowledge and mention that no relevant documents were found in their library."""
     
-    # Add conversation history
-    for msg in chat_req.conversation_history[-10:]:  # Keep last 10 messages
-        messages.append({"role": msg.role, "content": msg.content})
+    messages.append({"role": "system", "content": system_content})
     
-    # Add current user message
-    messages.append({"role": "user", "content": chat_req.message})
+    # Add conversation history (last 10 messages)
+    for msg in conversation_history[-10:]:
+        messages.append({"role": msg.get('role', 'user'), "content": msg.get('content', '')})
+    
+    # Add current message
+    messages.append({"role": "user", "content": message})
     
     # Prepare OpenAI request
     openai_data = {
@@ -114,41 +267,36 @@ When answering:
         }
     
     try:
-        # Make request to OpenAI API
+        # Make request to OpenAI
         response = requests.post(
             "https://api.openai.com/v1/chat/completions",
             headers=headers,
             json=openai_data,
-            proxies=proxies if proxy_url else None,
+            proxies=proxies,
             timeout=30
         )
         
         if response.status_code != 200:
-            error_detail = response.text if response.text else f"HTTP {response.status_code}"
             return {
                 'statusCode': 500,
-                'headers': {'Access-Control-Allow-Origin': '*'},
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
                 'body': json.dumps({
                     'error': 'OpenAI API error',
-                    'detail': error_detail
-                })
+                    'detail': response.text
+                }),
+                'isBase64Encoded': False
             }
         
-        openai_response = response.json()
-        ai_message = openai_response['choices'][0]['message']['content']
+        ai_response = response.json()['choices'][0]['message']['content']
         
-        # Determine which documents were likely referenced
-        referenced_docs = []
-        if chat_req.documents:
-            # Simple heuristic: if response mentions document content, mark as referenced
-            for doc in chat_req.documents:
-                if any(word in ai_message.lower() for word in doc.lower().split()[:3]):
-                    referenced_docs.append(doc)
-        
+        # Prepare response with sources
         result = {
-            'response': ai_message,
-            'sources': referenced_docs,
-            'request_id': context.request_id,
+            'response': ai_response,
+            'sources': [doc['name'] for doc in relevant_docs],
+            'documents_used': len(relevant_docs),
             'model_used': 'gpt-4o-mini'
         }
         
@@ -158,24 +306,21 @@ When answering:
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'body': json.dumps(result)
+            'body': json.dumps(result),
+            'isBase64Encoded': False
         }
         
-    except requests.exceptions.RequestException as e:
-        return {
-            'statusCode': 500,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({
-                'error': 'Network error connecting to OpenAI',
-                'detail': str(e)
-            })
-        }
     except Exception as e:
+        print(f"[ERROR] Chat processing failed: {e}")
         return {
             'statusCode': 500,
-            'headers': {'Access-Control-Allow-Origin': '*'},
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
             'body': json.dumps({
                 'error': 'Internal server error',
                 'detail': str(e)
-            })
+            }),
+            'isBase64Encoded': False
         }

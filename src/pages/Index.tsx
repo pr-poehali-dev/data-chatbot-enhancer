@@ -105,21 +105,18 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
         content: msg.content
       }));
 
-      // Get document contents for context - use full content for better context
-      const documentContents = documents.map(doc => {
-        // For chat context, we need the full content, not the truncated version
-        return `${doc.name}: ${doc.content}`;
-      });
+      // We don't need to send document contents anymore - backend will search them
+      // based on the user's message using embeddings
 
       const response = await fetch('https://functions.poehali.dev/f4577fe4-cb11-4571-b7e5-32e9c0d072a2', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-User-Id': auth.userId.toString()
         },
         body: JSON.stringify({
           message: messageToSend,
-          conversation_history: conversationHistory,
-          documents: documentContents
+          conversation_history: conversationHistory
         })
       });
 
