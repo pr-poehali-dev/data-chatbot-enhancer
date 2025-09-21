@@ -77,18 +77,18 @@ def calculate_cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     except:
         return 0
 
-def search_similar_documents(query_embedding: List[float], limit: int = 5) -> List[Dict]:
+def search_similar_documents(query_embedding: List[float], user_id: int, limit: int = 5) -> List[Dict]:
     """Search for similar documents using vector similarity"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         
-        # Get all documents with embeddings
+        # Get all documents with embeddings for this user
         cursor.execute("""
             SELECT id, name, content, file_type, created_at, embedding
             FROM documents 
-            WHERE embedding IS NOT NULL
-        """)
+            WHERE embedding IS NOT NULL AND user_id = %s
+        """, (user_id,))
         
         results = []
         for row in cursor.fetchall():
@@ -123,11 +123,31 @@ def search_similar_documents(query_embedding: List[float], limit: int = 5) -> Li
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
     Business: Manage document storage, embedding generation, and similarity search
-    Args: event - dict with httpMethod, body, queryStringParameters
+    Args: event - dict with httpMethod, body, queryStringParameters, headers
           context - object with request_id for tracking
     Returns: HTTP response with document operations results
     """
     method: str = event.get('httpMethod', 'GET')
+    headers = event.get('headers', {})
+    
+    # Extract user_id from Authorization header
+    user_id = None
+    auth_header = headers.get('Authorization', '') or headers.get('authorization', '')
+    if auth_header:
+        # Expecting format: "Bearer user_id"
+        parts = auth_header.split(' ')
+        if len(parts) == 2 and parts[0] == 'Bearer':
+            try:
+                user_id = int(parts[1])
+            except:
+                pass
+    
+    if not user_id:
+        return {
+            'statusCode': 401,
+            'headers': {'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Unauthorized - please provide user_id in Authorization header'})
+        }
     
     # Handle CORS OPTIONS request
     if method == 'OPTIONS':
@@ -155,7 +175,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 # Create embedding for search query
                 query_embedding = create_embedding(search_query)
                 if query_embedding:
-                    results = search_similar_documents(query_embedding)
+                    results = search_similar_documents(query_embedding, user_id)
                     return {
                         'statusCode': 200,
                         'headers': {'Access-Control-Allow-Origin': '*'},
@@ -165,13 +185,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         })
                     }
             
-            # Get all documents
+            # Get all documents for this user
             cursor.execute("""
                 SELECT id, name, content, file_type, created_at, 
                        CASE WHEN embedding IS NOT NULL THEN true ELSE false END as has_embedding
                 FROM documents 
+                WHERE user_id = %s
                 ORDER BY created_at DESC
-            """)
+            """, (user_id,))
             
             documents = []
             for row in cursor.fetchall():
@@ -205,17 +226,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if embedding:
                 embedding_str = json.dumps(embedding)
             
-            # Insert document into database
+            # Insert document into database with user_id
             cursor.execute("""
-                INSERT INTO documents (name, content, file_type, embedding, created_at)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO documents (name, content, file_type, embedding, created_at, user_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 doc_upload.name,
                 doc_upload.content,
                 doc_upload.file_type,
                 embedding_str,
-                datetime.now()
+                datetime.now(),
+                user_id
             ))
             
             doc_id = cursor.fetchone()['id']
@@ -245,7 +267,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'error': 'Document ID required'})
                 }
             
-            cursor.execute("DELETE FROM documents WHERE id = %s", (doc_id,))
+            # Delete only if document belongs to this user
+            cursor.execute("DELETE FROM documents WHERE id = %s AND user_id = %s", (doc_id, user_id))
             conn.commit()
             cursor.close()
             conn.close()

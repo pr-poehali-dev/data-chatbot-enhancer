@@ -23,7 +23,16 @@ interface Document {
   size: string;
 }
 
-function Index() {
+interface IndexProps {
+  auth: {
+    userId: number;
+    username: string;
+    token: string;
+  };
+  onLogout: () => void;
+}
+
+function Index({ auth, onLogout }: IndexProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -47,6 +56,9 @@ function Index() {
       try {
         const response = await fetch('https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd', {
           method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${auth.userId}`
+          }
         });
 
         if (response.ok) {
@@ -156,6 +168,7 @@ function Index() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${auth.userId}`
           },
           body: JSON.stringify({
             name: file.name,
@@ -189,6 +202,9 @@ function Index() {
     try {
       const response = await fetch(`https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${auth.userId}`
+        }
       });
 
       if (response.ok) {
@@ -210,9 +226,18 @@ function Index() {
             alt="Matthew McConaughey"
             className="w-16 h-16 rounded-full object-cover"
           />
-          <div>
-            <h1 className="text-3xl font-bold mb-1">Alright AI</h1>
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold mb-1">Alright, Alright, Alright AI</h1>
             <p className="text-muted-foreground">Matthew's personal app</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              Welcome, {auth.username}
+            </span>
+            <Button variant="ghost" size="sm" onClick={onLogout}>
+              <Icon name="LogOut" size={16} className="mr-2" />
+              Logout
+            </Button>
           </div>
         </div>
 
