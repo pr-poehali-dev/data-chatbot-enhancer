@@ -2,7 +2,7 @@ import Icon from '@/components/ui/icon';
 
 export function Footer() {
   return (
-    <footer className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t">
+    <footer className="mt-8 border-t bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 sm:py-3">
         <div className="flex items-center justify-center gap-1.5 text-xs sm:text-sm text-muted-foreground">
           <Icon name="Package" size={14} className="sm:w-4 sm:h-4" />
