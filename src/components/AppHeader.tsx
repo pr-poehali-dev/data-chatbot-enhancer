@@ -15,11 +15,11 @@ interface AppHeaderProps {
 export function AppHeader({ auth, onLogout, onShowVideoModal, onShowLoginModal }: AppHeaderProps) {
   return (
     <div className="mb-4 sm:mb-8 flex items-center justify-between gap-3 sm:gap-4">
-      <div className="flex items-center gap-3 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-3">
         <img 
-          src="https://cdn.poehali.dev/files/93f128c7-107b-4e97-8627-7bd8c980d13b.png" 
+          src="https://cdn.poehali.dev/files/5aa3e9f7-8be1-4575-a81d-fe4fdaead930.png" 
           alt="Matthew McConaughey"
-          className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
+          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
         />
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Alright AI</h1>
