@@ -6,30 +6,52 @@ import { Document } from '@/types';
 interface LibraryTabProps {
   documents: Document[];
   isUploadingFile: boolean;
+  isAuthenticated: boolean;
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onDeleteDocument: (id: string) => void;
+  onShowLoginModal: () => void;
 }
 
 export function LibraryTab({
   documents,
   isUploadingFile,
+  isAuthenticated,
   onFileUpload,
-  onDeleteDocument
+  onDeleteDocument,
+  onShowLoginModal
 }: LibraryTabProps) {
+  const handleFileInputClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isAuthenticated) {
+      event.preventDefault();
+      event.target.value = '';
+      onShowLoginModal();
+      return;
+    }
+    onFileUpload(event);
+  };
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-16rem)]">
       <div className="lg:col-span-2 flex flex-col h-full">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Document Library</CardTitle>
-            <div className="relative">
-              <input
-                type="file"
-                accept=".txt,.pdf,.doc,.docx"
-                onChange={onFileUpload}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-              />
-              <Button className="flex items-center gap-2" disabled={isUploadingFile}>
+            {!isAuthenticated ? (
+              <Button 
+                className="flex items-center gap-2" 
+                onClick={onShowLoginModal}
+              >
+                <Icon name="LogIn" size={16} />
+                Sign In to Upload
+              </Button>
+            ) : (
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".txt,.pdf,.doc,.docx"
+                  onChange={handleFileInputClick}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+                <Button className="flex items-center gap-2" disabled={isUploadingFile}>
                 {isUploadingFile ? (
                   <>
                     <Icon name="Loader2" size={16} className="animate-spin-slow" />
@@ -42,7 +64,8 @@ export function LibraryTab({
                   </>
                 )}
               </Button>
-            </div>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -53,19 +76,26 @@ export function LibraryTab({
                   <p className="text-sm text-muted-foreground/60 mb-6">
                     Upload your first document to start building your knowledge base
                   </p>
-                  <div className="relative inline-block">
-                    <input
-                      type="file"
-                      accept=".txt,.pdf,.doc,.docx"
-                      onChange={onFileUpload}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      disabled={isUploadingFile}
-                    />
-                    <Button variant="outline" className="flex items-center gap-2">
-                      <Icon name="Upload" size={16} />
-                      Choose File
+                  {!isAuthenticated ? (
+                    <Button variant="outline" className="flex items-center gap-2" onClick={onShowLoginModal}>
+                      <Icon name="LogIn" size={16} />
+                      Sign In to Upload
                     </Button>
-                  </div>
+                  ) : (
+                    <div className="relative inline-block">
+                      <input
+                        type="file"
+                        accept=".txt,.pdf,.doc,.docx"
+                        onChange={handleFileInputClick}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        disabled={isUploadingFile}
+                      />
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <Icon name="Upload" size={16} />
+                        Choose File
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 documents.map((doc) => (
