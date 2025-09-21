@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,8 +34,12 @@ function Index() {
   ]);
   
   const [documents, setDocuments] = useState<Document[]>([]);
-  
   const [currentMessage, setCurrentMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load documents from database on component mount
   useEffect(() => {
@@ -64,6 +68,11 @@ function Index() {
     loadDocuments();
   }, []);
 
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const sendMessage = async () => {
     if (!currentMessage.trim()) return;
 
@@ -77,6 +86,7 @@ function Index() {
     setMessages(prev => [...prev, userMessage]);
     const messageToSend = currentMessage;
     setCurrentMessage('');
+    setIsLoading(true);
 
     try {
       // Prepare conversation history
@@ -129,12 +139,15 @@ function Index() {
       };
 
       setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setIsUploadingFile(true);
       try {
         const text = await file.text();
         
@@ -166,6 +179,8 @@ function Index() {
         }
       } catch (error) {
         console.error('Error uploading file:', error);
+      } finally {
+        setIsUploadingFile(false);
       }
     }
   };
@@ -187,11 +202,18 @@ function Index() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-7xl mx-auto p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Assistant</h1>
-          <p className="text-gray-600">Your personal knowledge-based chat assistant</p>
+        <div className="mb-8 flex items-center gap-4">
+          <img 
+            src="https://cdn.poehali.dev/files/93f128c7-107b-4e97-8627-7bd8c980d13b.png" 
+            alt="Matthew McConaughey"
+            className="w-16 h-16 rounded-full object-cover"
+          />
+          <div>
+            <h1 className="text-3xl font-bold mb-1">Alright, Alright, Alright AI</h1>
+            <p className="text-muted-foreground">Matthew's personal app</p>
+          </div>
         </div>
 
         <Tabs defaultValue="chat" className="w-full">
@@ -225,10 +247,10 @@ function Index() {
                           className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                         >
                           <div
-                            className={`max-w-[80%] rounded-lg p-3 ${
+                            className={`max-w-[80%] rounded-lg p-3 animate-slide-up ${
                               message.isUser
                                 ? 'bg-primary text-primary-foreground'
-                                : 'bg-white border'
+                                : 'bg-card border'
                             }`}
                           >
                             <p className="text-sm">{message.content}</p>
@@ -248,6 +270,18 @@ function Index() {
                           </div>
                         </div>
                       ))}
+                      {isLoading && (
+                        <div className="flex justify-start">
+                          <div className="bg-card border rounded-lg p-3 flex items-center gap-2 animate-pulse-blue">
+                            <div className="flex gap-1">
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <div ref={messagesEndRef} />
                     </div>
                   </ScrollArea>
 
@@ -260,7 +294,7 @@ function Index() {
                         onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                         className="flex-1"
                       />
-                      <Button onClick={sendMessage} className="px-6">
+                      <Button onClick={sendMessage} className="px-6" disabled={isLoading}>
                         <Icon name="Send" size={16} />
                       </Button>
                     </div>
@@ -280,14 +314,14 @@ function Index() {
                       </p>
                       <div className="space-y-1">
                         {documents.slice(0, 3).map((doc) => (
-                          <div key={doc.id} className="text-xs p-2 bg-gray-50 rounded flex items-center gap-2">
+                          <div key={doc.id} className="text-xs p-2 bg-accent/10 rounded flex items-center gap-2">
                             <Icon name="FileText" size={12} />
                             <span className="truncate">{doc.name}</span>
                           </div>
                         ))}
                       </div>
                       {documents.length > 3 && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground/60">
                           +{documents.length - 3} more documents
                         </p>
                       )}
@@ -311,9 +345,18 @@ function Index() {
                         onChange={handleFileUpload}
                         className="absolute inset-0 opacity-0 cursor-pointer"
                       />
-                      <Button className="flex items-center gap-2">
-                        <Icon name="Upload" size={16} />
-                        Upload Document
+                      <Button className="flex items-center gap-2" disabled={isUploadingFile}>
+                        {isUploadingFile ? (
+                          <>
+                            <Icon name="Loader2" size={16} className="animate-spin-slow" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="Upload" size={16} />
+                            Upload Document
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardHeader>
@@ -322,16 +365,16 @@ function Index() {
                       {documents.map((doc) => (
                         <div
                           key={doc.id}
-                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/10 transition-all duration-200 animate-slide-up"
                         >
                           <div className="flex items-center gap-3">
-                            <Icon name="FileText" size={20} className="text-gray-500" />
+                            <Icon name="FileText" size={20} className="text-muted-foreground" />
                             <div>
                               <p className="font-medium text-sm">{doc.name}</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-muted-foreground">
                                 {doc.size} • {doc.uploadDate.toLocaleDateString()}
                               </p>
-                              <p className="text-xs text-gray-400 truncate max-w-[300px]">
+                              <p className="text-xs text-muted-foreground/60 truncate max-w-[300px]">
                                 {doc.content.slice(0, 100)}...
                               </p>
                             </div>

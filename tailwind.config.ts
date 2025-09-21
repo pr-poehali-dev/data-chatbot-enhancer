@@ -84,11 +84,49 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-blue': {
+					'0%, 100%': {
+						opacity: '1'
+					},
+					'50%': {
+						opacity: '.5'
+					}
+				},
+				'slide-up': {
+					from: {
+						transform: 'translateY(10px)',
+						opacity: '0'
+					},
+					to: {
+						transform: 'translateY(0)',
+						opacity: '1'
+					}
+				},
+				'fade-in': {
+					from: {
+						opacity: '0'
+					},
+					to: {
+						opacity: '1'
+					}
+				},
+				'spin-slow': {
+					from: {
+						transform: 'rotate(0deg)'
+					},
+					to: {
+						transform: 'rotate(360deg)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-blue': 'pulse-blue 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'slide-up': 'slide-up 0.3s ease-out',
+				'fade-in': 'fade-in 0.3s ease-out',
+				'spin-slow': 'spin-slow 3s linear infinite'
 			}
 		}
 	},
