@@ -270,7 +270,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
   };
 
   return (
-    <div className={`min-h-screen bg-background text-foreground flex flex-col ${activeTab === 'chat' ? 'h-screen overflow-hidden sm:min-h-screen sm:overflow-auto' : ''}`}>
+    <div className={`min-h-screen bg-background text-foreground flex flex-col pt-10 ${activeTab === 'chat' ? 'h-screen overflow-hidden sm:min-h-screen sm:overflow-auto' : ''}`}>
       <div className="flex-1 max-w-7xl mx-auto p-4 sm:p-6 w-full">
         <AppHeader 
           auth={auth}
