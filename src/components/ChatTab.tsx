@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Message, Document } from '@/types';
 import { SourceReferences } from '@/components/SourceReferences';
-import { useState } from 'react';
 
 interface ChatTabProps {
   messages: Message[];
@@ -27,52 +26,13 @@ export function ChatTab({
   onMessageChange,
   onSendMessage
 }: ChatTabProps) {
-  const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
-  
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-4 gap-4 lg:gap-6">
-      {/* Mobile toggle for knowledge base */}
-      <div className="lg:hidden flex justify-between items-center mb-2">
-        <h3 className="text-sm font-medium">Chat Assistant</h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowKnowledgeBase(!showKnowledgeBase)}
-          className="text-xs"
-        >
-          <Icon name={showKnowledgeBase ? "X" : "Database"} size={14} className="mr-1" />
-          {showKnowledgeBase ? 'Hide' : 'Knowledge'} ({documents.length})
-        </Button>
-      </div>
-      
-      {/* Mobile knowledge base */}
-      {showKnowledgeBase && (
-        <Card className="lg:hidden mb-4">
-          <CardHeader className="py-3">
-            <CardTitle className="text-sm">Knowledge Base</CardTitle>
-          </CardHeader>
-          <CardContent className="py-3">
-            <div className="max-h-32 overflow-y-auto space-y-1">
-              {documents.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">
-                  No documents uploaded
-                </p>
-              ) : (
-                documents.map((doc) => (
-                  <div key={doc.id} className="text-xs p-1.5 bg-accent/10 rounded flex items-center gap-1.5">
-                    <Icon name="FileText" size={10} className="flex-shrink-0" />
-                    <span className="truncate">{doc.name}</span>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+    <div className="flex flex-col lg:grid lg:grid-cols-4 gap-4 lg:gap-6 flex-1">
+
       
       {/* Main chat area */}
-      <div className="lg:col-span-3">
-        <Card className="h-[calc(100vh-180px)] sm:h-[600px] flex flex-col">
+      <div className="lg:col-span-3 flex-1 flex flex-col">
+        <Card className="h-full sm:h-[600px] flex flex-col">
           <CardHeader className="border-b py-3 sm:py-4">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Icon name="Bot" size={18} className="sm:w-5 sm:h-5" />
