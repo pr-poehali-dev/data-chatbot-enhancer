@@ -13,9 +13,10 @@ export default function TopBanner() {
             href="https://poehali.dev" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="font-bold underline underline-offset-2 hover:text-gray-700 transition-colors"
+            className="font-bold underline underline-offset-2 hover:text-gray-700 transition-colors inline-flex items-center gap-1"
           >
             poehali.dev
+            <Icon name="ExternalLink" size={12} className="text-black" />
           </a>
           <span>in 2 hours</span>
         </p>
