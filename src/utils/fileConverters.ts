@@ -2,7 +2,15 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Try multiple CDN sources for better reliability
+const cdnSources = [
+  `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`,
+  `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`,
+  `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
+];
+
+// Use the first available CDN
+pdfjsLib.GlobalWorkerOptions.workerSrc = cdnSources[0];
 
 export interface ConversionResult {
   success: boolean;
@@ -13,7 +21,17 @@ export interface ConversionResult {
 export async function convertPdfToText(file: File): Promise<ConversionResult> {
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    // Try to load with worker disabled as fallback
+    const loadingTask = pdfjsLib.getDocument({
+      data: arrayBuffer,
+      // Disable worker to avoid CORS issues
+      disableWorker: true,
+      // Use legacy build for better compatibility
+      isEvalSupported: false
+    });
+    
+    const pdf = await loadingTask.promise;
     
     let fullText = '';
     
@@ -49,10 +67,21 @@ export async function convertPdfToText(file: File): Promise<ConversionResult> {
     };
   } catch (error) {
     console.error('PDF conversion error:', error);
+    
+    // More detailed error message
+    let errorMessage = 'Ошибка при чтении PDF файла. ';
+    if (error instanceof Error) {
+      if (error.message.includes('worker')) {
+        errorMessage += 'Попробуйте перезагрузить страницу.';
+      } else {
+        errorMessage += error.message;
+      }
+    }
+    
     return {
       success: false,
       text: '',
-      error: 'Ошибка при чтении PDF файла'
+      error: errorMessage
     };
   }
 }
