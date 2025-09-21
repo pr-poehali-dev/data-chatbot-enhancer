@@ -130,6 +130,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     print(f"[DEBUG] Received event: {json.dumps(event)}")
     method: str = event.get('httpMethod', 'GET')
     headers = event.get('headers', {})
+    print(f"[DEBUG] Method: {method}, Headers: {headers}")
     
     # Extract user_id from custom header to avoid Yandex Cloud auth conflicts
     user_id = None
@@ -315,6 +316,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
             
     except Exception as e:
+        print(f"[ERROR] Exception in handler: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             'statusCode': 500,
             'headers': {
