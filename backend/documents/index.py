@@ -203,43 +203,50 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             content = body.get('content', '')
             file_type = body.get('file_type', 'text/plain')
             
-            # Process PDF files
+            # Process content for embedding
             text_for_embedding = content
+            content_preview = ""
+            
             if file_type == 'application/pdf':
-                # Store base64 in content, but extract text for embedding
+                # Extract text from PDF for embedding
                 text_for_embedding = extract_text_from_pdf(content)
-                # Mark content as PDF with base64
-                content = f"[PDF:{content[:100]}...]"  # Store truncated for reference
+                content_preview = text_for_embedding[:200] + "..." if len(text_for_embedding) > 200 else text_for_embedding
+            else:
+                # For text files, use content directly
+                content_preview = content[:200] + "..." if len(content) > 200 else content
             
             # Create embedding from text
             embedding = create_embedding(text_for_embedding)
             
-            # Insert document into database
-            if embedding:
-                cursor.execute("""
-                    INSERT INTO documents (name, content, file_type, embedding, created_at, user_id)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    RETURNING id
-                """, (
-                    name,
-                    content,
-                    file_type,
-                    json.dumps(embedding),
-                    datetime.now(),
-                    user_id
-                ))
-            else:
-                cursor.execute("""
-                    INSERT INTO documents (name, content, file_type, created_at, user_id)
-                    VALUES (%s, %s, %s, %s, %s)
-                    RETURNING id
-                """, (
-                    name,
-                    content,
-                    file_type,
-                    datetime.now(),
-                    user_id
-                ))
+            # Only save if we have embedding (no point storing without search capability)
+            if not embedding:
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': 'Failed to create embedding. Please check if OpenAI API key is configured.'
+                    }),
+                    'isBase64Encoded': False
+                }
+            
+            # Insert document with embedding and preview only
+            cursor.execute("""
+                INSERT INTO documents (name, content, file_type, embedding, created_at, user_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (
+                name,
+                content_preview,  # Only store preview, not full content
+                file_type,
+                json.dumps(embedding),
+                datetime.now(),
+                user_id
+            ))
             
             doc_id = cursor.fetchone()['id']
             conn.commit()
