@@ -25,9 +25,10 @@ export function LibraryTab({
             <div className="relative">
               <input
                 type="file"
-                accept=".txt,.pdf,.doc,.docx"
+                accept=".txt,.pdf"
                 onChange={onFileUpload}
                 className="absolute inset-0 opacity-0 cursor-pointer"
+                disabled={isUploadingFile || documents.length >= 20}
               />
               <Button className="flex items-center gap-2" disabled={isUploadingFile}>
                 {isUploadingFile ? (
@@ -56,10 +57,10 @@ export function LibraryTab({
                   <div className="relative inline-block">
                     <input
                       type="file"
-                      accept=".txt,.pdf,.doc,.docx"
+                      accept=".txt,.pdf"
                       onChange={onFileUpload}
                       className="absolute inset-0 opacity-0 cursor-pointer"
-                      disabled={isUploadingFile}
+                      disabled={isUploadingFile || documents.length >= 20}
                     />
                     <Button variant="outline" className="flex items-center gap-2">
                       <Icon name="Upload" size={16} />
@@ -109,18 +110,20 @@ export function LibraryTab({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{documents.length}</div>
+              <div className="text-2xl font-bold text-primary">{documents.length} / 20</div>
               <p className="text-sm text-gray-600">Total Documents</p>
+              <p className="text-xs text-muted-foreground mt-1">Max 20 files</p>
             </div>
             
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">
                 {documents.reduce((acc, doc) => {
                   const bytes = new Blob([doc.content]).size;
-                  return acc + bytes / 1024;
-                }, 0).toFixed(1)}
+                  return acc + bytes / 1024 / 1024;
+                }, 0).toFixed(1)} MB
               </div>
-              <p className="text-sm text-gray-600">Total Size (KB)</p>
+              <p className="text-sm text-gray-600">Total Size</p>
+              <p className="text-xs text-muted-foreground mt-1">Max 5MB per file</p>
             </div>
 
             <div className="pt-4 border-t">
@@ -132,11 +135,7 @@ export function LibraryTab({
                 </div>
                 <div className="flex items-center gap-2">
                   <Icon name="File" size={12} />
-                  PDF Documents
-                </div>
-                <div className="flex items-center gap-2">
-                  <Icon name="FileText" size={12} />
-                  Word Documents
+                  PDF Documents (.pdf)
                 </div>
               </div>
             </div>

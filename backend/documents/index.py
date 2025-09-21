@@ -239,8 +239,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             documents = []
             for row in cursor.fetchall():
-                # No content stored anymore
-                content = '[No content - embedding only]'
+                # Show preview of content in list
+                content = row['content']
+                if len(content) > 200:
+                    content = content[:200] + '...'
                     
                 documents.append({
                     'id': row['id'],
@@ -275,14 +277,52 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             content = body.get('content', '')
             file_type = body.get('file_type', 'text/plain')
             
+            # Check file size limit (5MB)
+            if len(content) > 5 * 1024 * 1024:
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': 'File too large. Maximum size is 5MB.'
+                    }),
+                    'isBase64Encoded': False
+                }
+            
+            # Check documents limit (20 per account)
+            cursor.execute("""
+                SELECT COUNT(*) as count FROM documents WHERE user_id = %s
+            """, (user_id,))
+            doc_count = cursor.fetchone()['count']
+            
+            if doc_count >= 20:
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': 'Document limit reached. Maximum 20 documents per account.'
+                    }),
+                    'isBase64Encoded': False
+                }
+            
             # Process content for embedding
             text_for_embedding = content
+            content_to_save = content  # Store original content
             
             if file_type == 'application/pdf':
                 # Extract text from PDF for embedding
                 text_for_embedding = extract_text_from_pdf(content)
-            
-            # We'll only store metadata, not content
+                # For PDF, save the extracted text, not base64
+                content_to_save = text_for_embedding
             
             # Create embedding from text
             embedding = create_embedding(text_for_embedding)
@@ -303,14 +343,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            # Insert document with embedding only (no content)
+            # Insert document with full content and embedding
             cursor.execute("""
                 INSERT INTO documents (name, content, file_type, embedding, created_at, user_id)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 name,
-                '',  # No content stored
+                content_to_save,  # Store full content
                 file_type,
                 json.dumps(embedding),
                 datetime.now(),
