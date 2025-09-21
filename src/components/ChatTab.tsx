@@ -97,7 +97,7 @@ export function ChatTab({
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                     {message.sources && <SourceReferences sources={message.sources as any} />}
                     <p className="text-xs opacity-70 mt-1">
-                      {message.timestamp.toLocaleTimeString()}
+                      {message.timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>
