@@ -46,7 +46,7 @@ export function LibraryTab({
             </div>
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto py-3 sm:py-4">
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-2 sm:space-y-3 overflow-hidden">
               {documents.length === 0 ? (
                 <div className="text-center py-8 sm:py-12">
                   <Icon name="FileX" size={40} className="mx-auto text-muted-foreground/30 mb-3 sm:mb-4" />
@@ -74,14 +74,14 @@ export function LibraryTab({
                     key={doc.id}
                     className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg hover:bg-accent/10 transition-all duration-200 animate-slide-up gap-2"
                   >
-                    <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                    <div className="flex items-start sm:items-center gap-2 sm:gap-3 flex-1 min-w-0 overflow-hidden">
                       <Icon name="FileText" size={18} className="text-muted-foreground flex-shrink-0 mt-0.5 sm:mt-0" />
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         <p className="font-medium text-sm break-words">{doc.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {doc.uploadDate.toLocaleDateString()}
                         </p>
-                        <p className="text-xs text-muted-foreground/60 truncate">
+                        <p className="text-xs text-muted-foreground/60 truncate max-w-full overflow-hidden text-ellipsis">
                           {doc.content.slice(0, 50)}...
                         </p>
                       </div>
