@@ -86,9 +86,6 @@ export function LibraryTab({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Icon name="Eye" size={14} />
-                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
