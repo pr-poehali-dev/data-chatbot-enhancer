@@ -7,7 +7,7 @@ import AppHeader from '@/components/AppHeader';
 import ChatTab from '@/components/ChatTab';
 import LibraryTab from '@/components/LibraryTab';
 import FileUploadPreview from '@/components/FileUploadPreview';
-import Footer from '@/components/Footer';
+
 import { Message, Document } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -336,8 +336,6 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
         }}
         onConfirm={handleFilePreviewConfirm}
       />
-      
-      <Footer />
     </div>
   );
 }

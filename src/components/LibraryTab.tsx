@@ -81,8 +81,8 @@ export function LibraryTab({
                         <p className="text-xs text-muted-foreground">
                           {doc.uploadDate.toLocaleDateString()}
                         </p>
-                        <p className="text-xs text-muted-foreground/60 truncate max-w-full">
-                          {doc.content.slice(0, 80)}...
+                        <p className="text-xs text-muted-foreground/60 truncate">
+                          {doc.content.slice(0, 50)}...
                         </p>
                       </div>
                     </div>
