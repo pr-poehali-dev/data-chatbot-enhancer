@@ -25,13 +25,13 @@ export function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
     setIsLoading(true);
 
     try {
-      const endpoint = isSignUp ? 'register' : 'login';
-      const response = await fetch(`https://functions.poehali.dev/7cd2a343-9b16-48d5-a976-fa692138faf3?action=${endpoint}`, {
+      const action = isSignUp ? 'register' : 'login';
+      const response = await fetch(`https://functions.poehali.dev/7cd2a343-9b16-48d5-a976-fa692138faf3`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, action }),
       });
 
       const data = await response.json();
@@ -41,7 +41,7 @@ export function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
         return;
       }
 
-      onLogin(data.userId, data.username, data.token);
+      onLogin(data.user_id, data.username, data.token);
       onClose();
       setUsername('');
       setPassword('');
