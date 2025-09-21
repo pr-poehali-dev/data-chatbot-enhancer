@@ -6,6 +6,7 @@ import VideoModal from '@/components/VideoModal';
 import AppHeader from '@/components/AppHeader';
 import ChatTab from '@/components/ChatTab';
 import LibraryTab from '@/components/LibraryTab';
+import FileUploadPreview from '@/components/FileUploadPreview';
 import { Message, Document } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,6 +34,8 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showFilePreview, setShowFilePreview] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
@@ -154,80 +157,94 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      if (!auth) {
-        setShowLoginModal(true);
-        event.target.value = '';
-        return;
-      }
+    if (!file) return;
+    
+    // Reset input
+    event.target.value = '';
+    
+    if (!auth) {
+      setShowLoginModal(true);
+      return;
+    }
+    
+    // For non-text files, show preview dialog
+    if (!file.name.endsWith('.txt') && file.type !== 'text/plain') {
+      setSelectedFile(file);
+      setShowFilePreview(true);
+    } else {
+      // For text files, upload directly
       setIsUploadingFile(true);
       try {
-        // Only text files are supported
-        if (!file.name.endsWith('.txt') && file.type !== 'text/plain') {
-          toast({
-            title: "Ошибка",
-            description: "Поддерживаются только текстовые файлы (.txt)",
-            variant: "destructive",
-          });
-          event.target.value = '';
-          setIsUploadingFile(false);
-          return;
-        }
-        
         const content = await file.text();
-        const fileType = 'text/plain';
-        
-
-        // Upload to backend
-        const response = await fetch('https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-User-Id': auth.userId.toString()
-          },
-          body: JSON.stringify({
-            name: file.name,
-            content: content,
-            file_type: fileType
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const newDoc: Document = {
-            id: data.id.toString(),
-            name: file.name,
-            content: content,
-            uploadDate: new Date()
-          };
-          setDocuments(prev => [...prev, newDoc]);
-          toast({
-            title: "Успех!",
-            description: "Документ успешно загружен",
-          });
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('Upload failed:', response.status, errorData);
-          toast({
-            title: "Ошибка",
-            description: errorData.error || response.statusText || "Не удалось загрузить документ",
-            variant: "destructive",
-          });
-        }
+        await uploadTextContent(content, file.name);
       } catch (error) {
-        console.error('Error uploading file:', error);
+        console.error('Error reading file:', error);
         toast({
           title: "Ошибка",
-          description: "Не удалось загрузить файл. Попробуйте еще раз.",
-          variant: "destructive",
+          description: "Не удалось прочитать файл",
+          variant: "destructive"
         });
       } finally {
         setIsUploadingFile(false);
-        // Reset file input
-        if (event.target) {
-          event.target.value = '';
-        }
       }
+    }
+  };
+  
+  const uploadTextContent = async (content: string, fileName: string) => {
+    if (!auth) return;
+    
+    try {
+      const response = await fetch('https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': auth.userId.toString()
+        },
+        body: JSON.stringify({
+          name: fileName,
+          content: content,
+          file_type: 'text/plain'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const newDoc: Document = {
+          id: data.id.toString(),
+          name: fileName,
+          content: content,
+          uploadDate: new Date()
+        };
+        setDocuments(prev => [...prev, newDoc]);
+        toast({
+          title: "Успех!",
+          description: "Документ успешно загружен",
+        });
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast({
+          title: "Ошибка",
+          description: errorData.error || "Не удалось загрузить документ",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error uploading:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить файл",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleFilePreviewConfirm = async (text: string, fileName: string) => {
+    setIsUploadingFile(true);
+    try {
+      await uploadTextContent(text, fileName);
+    } finally {
+      setIsUploadingFile(false);
+      setSelectedFile(null);
     }
   };
 
@@ -307,6 +324,16 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
       <VideoModal
         isOpen={showVideoModal}
         onClose={() => setShowVideoModal(false)}
+      />
+      
+      <FileUploadPreview
+        file={selectedFile}
+        isOpen={showFilePreview}
+        onClose={() => {
+          setShowFilePreview(false);
+          setSelectedFile(null);
+        }}
+        onConfirm={handleFilePreviewConfirm}
       />
     </div>
   );
