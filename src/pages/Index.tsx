@@ -166,9 +166,19 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
         
         if (file.type === 'application/pdf') {
           // For PDF files, we'll send the base64 content to backend
-          const arrayBuffer = await file.arrayBuffer();
-          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-          content = base64;
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = '';
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            content = btoa(binary);
+          } catch (pdfError) {
+            console.error('Error converting PDF to base64:', pdfError);
+            throw new Error('Failed to process PDF file');
+          }
         } else {
           // For text files, read as text
           content = await file.text();
@@ -192,21 +202,28 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
         if (response.ok) {
           const data = await response.json();
           const newDoc: Document = {
-            id: data.id,
+            id: data.id.toString(),
             name: file.name,
             content: file.type === 'application/pdf' ? '[PDF Document]' : content, // Store full content for chat context
             uploadDate: new Date(),
             size: `${(file.size / 1024).toFixed(1)} KB`,
           };
           setDocuments(prev => [...prev, newDoc]);
+          alert('Документ успешно загружен!');
         } else {
           const errorData = await response.json().catch(() => ({}));
           console.error('Upload failed:', response.status, errorData);
+          alert(`Ошибка загрузки: ${errorData.error || response.statusText}`);
         }
       } catch (error) {
         console.error('Error uploading file:', error);
+        alert('Ошибка загрузки файла. Попробуйте еще раз.');
       } finally {
         setIsUploadingFile(false);
+        // Reset file input
+        if (event.target) {
+          event.target.value = '';
+        }
       }
     }
   };

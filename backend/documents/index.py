@@ -270,6 +270,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body = json.loads(event.get('body', '{}'))
             print(f"[DEBUG] Upload request for user {user_id}")
             
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
             name = body.get('name', 'Untitled')
             content = body.get('content', '')
             file_type = body.get('file_type', 'text/plain')
