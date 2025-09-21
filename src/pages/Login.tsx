@@ -82,9 +82,7 @@ function Login({ onLogin }: LoginProps) {
               className="w-20 h-20 rounded-full object-cover"
             />
           </div>
-          <CardTitle className="text-2xl font-bold text-center">
-            Alright, Alright, Alright AI
-          </CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Alright AI</CardTitle>
           <p className="text-center text-muted-foreground">
             Matthew's personal app
           </p>
