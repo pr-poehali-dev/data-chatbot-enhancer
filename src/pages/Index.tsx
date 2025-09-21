@@ -40,6 +40,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [activeTab, setActiveTab] = useState('chat');
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -269,7 +270,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
   };
 
   return (
-    <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
+    <div className={`min-h-screen bg-background text-foreground flex flex-col ${activeTab === 'chat' ? 'h-screen overflow-hidden sm:min-h-screen sm:overflow-auto' : ''}`}>
       <div className="flex-1 max-w-7xl mx-auto p-4 sm:p-6 w-full">
         <AppHeader 
           auth={auth}
@@ -278,7 +279,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
           onShowLoginModal={() => setShowLoginModal(true)}
         />
 
-        <Tabs defaultValue="chat" className="w-full">
+        <Tabs defaultValue="chat" className="w-full" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="chat" className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
               <Icon name="MessageCircle" size={14} className="sm:w-4 sm:h-4" />
