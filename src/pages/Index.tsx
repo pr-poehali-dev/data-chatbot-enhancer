@@ -257,10 +257,8 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
             <LibraryTab
               documents={documents}
               isUploadingFile={isUploadingFile}
-              isAuthenticated={!!auth}
               onFileUpload={handleFileUpload}
               onDeleteDocument={deleteDocument}
-              onShowLoginModal={() => setShowLoginModal(true)}
             />
           </TabsContent>
         </Tabs>
