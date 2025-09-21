@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Message, Document } from '@/types';
 import { SourceReferences } from '@/components/SourceReferences';
+import { useState } from 'react';
 
 interface ChatTabProps {
   messages: Message[];
@@ -26,26 +27,68 @@ export function ChatTab({
   onMessageChange,
   onSendMessage
 }: ChatTabProps) {
+  const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
+  
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div className="flex flex-col lg:grid lg:grid-cols-4 gap-4 lg:gap-6">
+      {/* Mobile toggle for knowledge base */}
+      <div className="lg:hidden flex justify-between items-center mb-2">
+        <h3 className="text-sm font-medium">Chat Assistant</h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowKnowledgeBase(!showKnowledgeBase)}
+          className="text-xs"
+        >
+          <Icon name={showKnowledgeBase ? "X" : "Database"} size={14} className="mr-1" />
+          {showKnowledgeBase ? 'Hide' : 'Knowledge'} ({documents.length})
+        </Button>
+      </div>
+      
+      {/* Mobile knowledge base */}
+      {showKnowledgeBase && (
+        <Card className="lg:hidden mb-4">
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm">Knowledge Base</CardTitle>
+          </CardHeader>
+          <CardContent className="py-3">
+            <div className="max-h-32 overflow-y-auto space-y-1">
+              {documents.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  No documents uploaded
+                </p>
+              ) : (
+                documents.map((doc) => (
+                  <div key={doc.id} className="text-xs p-1.5 bg-accent/10 rounded flex items-center gap-1.5">
+                    <Icon name="FileText" size={10} className="flex-shrink-0" />
+                    <span className="truncate">{doc.name}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Main chat area */}
       <div className="lg:col-span-3">
-        <Card className="h-[600px] flex flex-col">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <Icon name="Bot" size={20} />
-              Chat Assistant
+        <Card className="h-[calc(100vh-250px)] sm:h-[600px] flex flex-col">
+          <CardHeader className="border-b py-3 sm:py-4">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Icon name="Bot" size={18} className="sm:w-5 sm:h-5" />
+              <span className="hidden sm:inline">Chat Assistant</span>
             </CardTitle>
           </CardHeader>
           
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
+          <ScrollArea className="flex-1 p-3 sm:p-4">
+            <div className="space-y-3 sm:space-y-4">
               {messages.map((message) => (
                 <div
                   key={message.id}
                   className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 animate-slide-up ${
+                    className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-2.5 sm:p-3 animate-slide-up ${
                       message.isUser
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-card border'
@@ -61,11 +104,11 @@ export function ChatTab({
               ))}
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-card border rounded-lg p-3 flex items-center gap-2 animate-pulse-blue">
+                  <div className="bg-card border rounded-lg p-2.5 sm:p-3 flex items-center gap-2 animate-pulse-blue">
                     <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                     </div>
                   </div>
                 </div>
@@ -74,24 +117,25 @@ export function ChatTab({
             </div>
           </ScrollArea>
 
-          <div className="border-t p-4">
+          <div className="border-t p-3 sm:p-4">
             <div className="flex gap-2">
               <Input
-                placeholder="Ask a question about your documents..."
+                placeholder="Ask about your documents..."
                 value={currentMessage}
                 onChange={(e) => onMessageChange(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && onSendMessage()}
-                className="flex-1"
+                className="flex-1 text-sm"
               />
-              <Button onClick={onSendMessage} className="px-6" disabled={isLoading}>
-                <Icon name="Send" size={16} />
+              <Button onClick={onSendMessage} size="default" className="px-3 sm:px-6" disabled={isLoading}>
+                <Icon name="Send" size={14} className="sm:w-4 sm:h-4" />
               </Button>
             </div>
           </div>
         </Card>
       </div>
 
-      <div className="lg:col-span-1">
+      {/* Desktop knowledge base */}
+      <div className="hidden lg:block lg:col-span-1">
         <Card className="h-full flex flex-col">
           <CardHeader className="flex-shrink-0">
             <CardTitle className="text-lg">Knowledge Base</CardTitle>

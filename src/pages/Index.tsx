@@ -269,7 +269,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
         <AppHeader 
           auth={auth}
           onLogout={onLogout}
@@ -278,18 +278,18 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
         />
 
         <Tabs defaultValue="chat" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="chat" className="flex items-center gap-2">
-              <Icon name="MessageCircle" size={16} />
-              Chat
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="chat" className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+              <Icon name="MessageCircle" size={14} className="sm:w-4 sm:h-4" />
+              <span>Chat</span>
             </TabsTrigger>
-            <TabsTrigger value="library" className="flex items-center gap-2">
-              <Icon name="Library" size={16} />
-              Library
+            <TabsTrigger value="library" className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+              <Icon name="Library" size={14} className="sm:w-4 sm:h-4" />
+              <span>Library</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="chat" className="mt-6">
+          <TabsContent value="chat" className="mt-4 sm:mt-6">
             <ChatTab
               messages={messages}
               documents={documents}
@@ -301,7 +301,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
             />
           </TabsContent>
 
-          <TabsContent value="library" className="mt-6">
+          <TabsContent value="library" className="mt-4 sm:mt-6">
             <LibraryTab
               documents={documents}
               isUploadingFile={isUploadingFile}
