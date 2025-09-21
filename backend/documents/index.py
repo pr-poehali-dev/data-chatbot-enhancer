@@ -279,15 +279,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Process content for embedding
             text_for_embedding = content
-            content_preview = ""
+            content_to_save = ""
             
             if file_type == 'application/pdf':
                 # Extract text from PDF for embedding
                 text_for_embedding = extract_text_from_pdf(content)
-                content_preview = text_for_embedding[:200] + "..." if len(text_for_embedding) > 200 else text_for_embedding
+                content_to_save = text_for_embedding  # Save full extracted text
             else:
                 # For text files, use content directly
-                content_preview = content[:200] + "..." if len(content) > 200 else content
+                content_to_save = content  # Save full content
             
             # Create embedding from text
             embedding = create_embedding(text_for_embedding)
@@ -315,7 +315,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 RETURNING id
             """, (
                 name,
-                content_preview,  # Only store preview, not full content
+                content_to_save,  # Store full content for search
                 file_type,
                 json.dumps(embedding),
                 datetime.now(),

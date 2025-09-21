@@ -112,8 +112,8 @@ def search_documents(query: str, user_id: int, limit: int = 5) -> List[Dict[str,
             
             print(f"[DEBUG] Document '{row['name']}' similarity: {similarity:.4f}")
             
-            # Lower threshold to 0.5 for better recall
-            if similarity > 0.5:
+            # Lower threshold to 0.2 for better recall
+            if similarity > 0.2:
                 results.append({
                     'name': row['name'],
                     'content': row['content'],
