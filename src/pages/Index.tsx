@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import Cookies from 'js-cookie';
 
 interface Message {
   id: string;
@@ -328,28 +329,23 @@ function Index({ auth, onLogout }: IndexProps) {
               </div>
 
               <div className="lg:col-span-1">
-                <Card>
-                  <CardHeader>
+                <Card className="h-full flex flex-col">
+                  <CardHeader className="flex-shrink-0">
                     <CardTitle className="text-lg">Knowledge Base</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <p className="text-sm text-gray-600">
+                  <CardContent className="flex-1 overflow-hidden">
+                    <div className="h-full flex flex-col">
+                      <p className="text-sm text-gray-600 mb-3 flex-shrink-0">
                         {documents.length} documents loaded
                       </p>
-                      <div className="space-y-1">
-                        {documents.slice(0, 3).map((doc) => (
+                      <div className="flex-1 overflow-y-auto space-y-1 pr-2">
+                        {documents.map((doc) => (
                           <div key={doc.id} className="text-xs p-2 bg-accent/10 rounded flex items-center gap-2">
-                            <Icon name="FileText" size={12} />
+                            <Icon name="FileText" size={12} className="flex-shrink-0" />
                             <span className="truncate">{doc.name}</span>
                           </div>
                         ))}
                       </div>
-                      {documents.length > 3 && (
-                        <p className="text-xs text-muted-foreground/60">
-                          +{documents.length - 3} more documents
-                        </p>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -358,8 +354,8 @@ function Index({ auth, onLogout }: IndexProps) {
           </TabsContent>
 
           <TabsContent value="library" className="mt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-16rem)]">
+              <div className="lg:col-span-2 flex flex-col h-full">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Document Library</CardTitle>
