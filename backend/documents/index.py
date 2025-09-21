@@ -133,24 +133,24 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # Extract user_id from Authorization header
     user_id = None
     auth_header = headers.get('Authorization', '') or headers.get('authorization', '')
-    print(f"Auth header: {auth_header}")
-    print(f"Headers: {headers}")
     if auth_header:
         # Expecting format: "Bearer user_id"
         parts = auth_header.split(' ')
         if len(parts) == 2 and parts[0] == 'Bearer':
             try:
                 user_id = int(parts[1])
-                print(f"Extracted user_id: {user_id}")
-            except Exception as e:
-                print(f"Error parsing user_id: {e}, value: {parts[1]}")
+            except:
                 pass
     
     if not user_id:
         return {
-            'statusCode': 403,
-            'headers': {'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'Unauthorized - please provide user_id in Authorization header'})
+            'statusCode': 401,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': 'Unauthorized - please provide user_id in Authorization header'}),
+            'isBase64Encoded': False
         }
     
     # Handle CORS OPTIONS request
@@ -163,7 +163,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Allow-Headers': 'Content-Type, Authorization',
                 'Access-Control-Max-Age': '86400'
             },
-            'body': ''
+            'body': '',
+            'isBase64Encoded': False
         }
     
     try:
@@ -182,11 +183,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     results = search_similar_documents(query_embedding, user_id)
                     return {
                         'statusCode': 200,
-                        'headers': {'Access-Control-Allow-Origin': '*'},
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
                         'body': json.dumps({
                             'documents': results,
                             'search_query': search_query
-                        })
+                        }),
+                        'isBase64Encoded': False
                     }
             
             # Get all documents for this user
@@ -215,8 +220,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             return {
                 'statusCode': 200,
-                'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'documents': documents})
+                'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+                'body': json.dumps({'documents': documents}),
+                'isBase64Encoded': False
             }
         
         elif method == 'POST':
@@ -251,12 +260,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             return {
                 'statusCode': 201,
-                'headers': {'Access-Control-Allow-Origin': '*'},
+                'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
                 'body': json.dumps({
                     'id': doc_id,
                     'message': 'Document uploaded successfully',
                     'has_embedding': embedding is not None
-                })
+                }),
+                'isBase64Encoded': False
             }
         
         elif method == 'DELETE':
@@ -267,8 +280,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if not doc_id:
                 return {
                     'statusCode': 400,
-                    'headers': {'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Document ID required'})
+                    'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+                    'body': json.dumps({'error': 'Document ID required'}),
+                    'isBase64Encoded': False
                 }
             
             # Delete only if document belongs to this user
@@ -279,23 +296,35 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             return {
                 'statusCode': 200,
-                'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'message': 'Document deleted successfully'})
+                'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+                'body': json.dumps({'message': 'Document deleted successfully'}),
+                'isBase64Encoded': False
             }
         
         else:
             return {
                 'statusCode': 405,
-                'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Method not allowed'})
+                'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+                'body': json.dumps({'error': 'Method not allowed'}),
+                'isBase64Encoded': False
             }
             
     except Exception as e:
         return {
             'statusCode': 500,
-            'headers': {'Access-Control-Allow-Origin': '*'},
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
             'body': json.dumps({
                 'error': 'Database operation failed',
                 'detail': str(e)
-            })
+            }),
+            'isBase64Encoded': False
         }

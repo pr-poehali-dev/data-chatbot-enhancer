@@ -4,6 +4,9 @@
       "name": "Test get documents",
       "method": "GET",
       "path": "/",
+      "headers": {
+        "Authorization": "Bearer 1"
+      },
       "expectedStatus": 200,
       "expectedBody": {
         "documents": "array"
@@ -14,6 +17,9 @@
       "name": "Test upload document",
       "method": "POST",
       "path": "/",
+      "headers": {
+        "Authorization": "Bearer 1"
+      },
       "body": {
         "name": "test-document.txt",
         "content": "This is a test document content for embedding generation.",
@@ -26,6 +32,13 @@
         "has_embedding": "boolean"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test CORS OPTIONS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": ""
     }
   ]
 }
