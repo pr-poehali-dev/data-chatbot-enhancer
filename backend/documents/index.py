@@ -14,64 +14,6 @@ def get_db_connection():
         raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(database_url)
 
-def extract_text_from_pdf(base64_content: str) -> str:
-    """Extract text from PDF using OpenAI API"""
-    openai_api_key = os.getenv('OPENAI_API_KEY')
-    if not openai_api_key:
-        print("[WARN] No OpenAI API key, cannot extract PDF text")
-        return "[PDF content - text extraction unavailable]"
-    
-    try:
-        headers = {
-            "Authorization": f"Bearer {openai_api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        # Use GPT-4 Vision to extract text from PDF
-        data = {
-            "model": "gpt-4o-mini",
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "Extract all text content from this document. Return only the text, no formatting or explanations."
-                },
-                {
-                    "role": "user",
-                    "content": f"Extract text from this PDF document (base64): {base64_content[:1000]}..."  # Truncate for prompt
-                }
-            ],
-            "max_tokens": 4000
-        }
-        
-        # Check if proxy is configured
-        proxy_url = os.getenv('PROXY_URL')
-        proxies = {}
-        if proxy_url:
-            proxies = {
-                'http': proxy_url,
-                'https': proxy_url
-            }
-            print("[INFO] Using proxy for OpenAI request")
-        
-        response = requests.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers=headers,
-            json=data,
-            timeout=30,
-            proxies=proxies
-        )
-        
-        if response.status_code == 200:
-            text = response.json()['choices'][0]['message']['content']
-            print(f"[INFO] Extracted {len(text)} characters from PDF")
-            return text
-        else:
-            print(f"[ERROR] OpenAI API error: {response.status_code}")
-            return "[PDF content - extraction failed]"
-    except Exception as e:
-        print(f"[ERROR] PDF extraction failed: {e}")
-        return "[PDF content - extraction error]"
-
 def create_embedding(text: str) -> Optional[List[float]]:
     """Create embedding for text using OpenAI API"""
     openai_api_key = os.getenv('OPENAI_API_KEY')
@@ -277,6 +219,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             content = body.get('content', '')
             file_type = body.get('file_type', 'text/plain')
             
+            # Only accept text files
+            if file_type != 'text/plain' and not name.endswith('.txt'):
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': 'Only text files (.txt) are supported.'
+                    }),
+                    'isBase64Encoded': False
+                }
+            
             # Check file size limit (5MB)
             if len(content) > 5 * 1024 * 1024:
                 cursor.close()
@@ -314,15 +272,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            # Process content for embedding
+            # Process content for embedding (only text files now)
             text_for_embedding = content
             content_to_save = content  # Store original content
-            
-            if file_type == 'application/pdf':
-                # Extract text from PDF for embedding
-                text_for_embedding = extract_text_from_pdf(content)
-                # For PDF, save the extracted text, not base64
-                content_to_save = text_for_embedding
             
             # Create embedding from text
             embedding = create_embedding(text_for_embedding)

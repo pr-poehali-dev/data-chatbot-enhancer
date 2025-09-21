@@ -311,10 +311,18 @@ Answer based on your general knowledge and mention that no relevant documents we
         
         ai_response = response.json()['choices'][0]['message']['content']
         
-        # Prepare response with sources
+        # Prepare response with detailed sources
+        sources = []
+        for i, doc in enumerate(relevant_docs):
+            sources.append({
+                'id': i + 1,
+                'name': doc['name'],
+                'relevance': doc['similarity']
+            })
+        
         result = {
             'response': ai_response,
-            'sources': [doc['name'] for doc in relevant_docs],
+            'sources': sources,
             'documents_used': len(relevant_docs),
             'model_used': 'gpt-4o-mini'
         }

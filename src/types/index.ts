@@ -3,7 +3,11 @@ export interface Message {
   content: string;
   isUser: boolean;
   timestamp: Date;
-  sources?: string[];
+  sources?: Array<{
+    id: number;
+    name: string;
+    relevance: number;
+  }>;
 }
 
 export interface Document {
@@ -11,5 +15,4 @@ export interface Document {
   name: string;
   content: string;
   uploadDate: Date;
-  size: string;
 }

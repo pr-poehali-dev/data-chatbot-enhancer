@@ -59,8 +59,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
           id: doc.id.toString(),
           name: doc.name,
           content: doc.content,
-          uploadDate: new Date(doc.created_at),
-          size: doc.size,
+          uploadDate: new Date(doc.created_at)
         }));
         setDocuments(formattedDocs);
       }
@@ -163,28 +162,20 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
       }
       setIsUploadingFile(true);
       try {
-        let content = '';
-        let fileType = file.type || 'text/plain';
-        
-        if (file.type === 'application/pdf') {
-          // For PDF files, we'll send the base64 content to backend
-          try {
-            const arrayBuffer = await file.arrayBuffer();
-            const bytes = new Uint8Array(arrayBuffer);
-            let binary = '';
-            const len = bytes.byteLength;
-            for (let i = 0; i < len; i++) {
-              binary += String.fromCharCode(bytes[i]);
-            }
-            content = btoa(binary);
-          } catch (pdfError) {
-            console.error('Error converting PDF to base64:', pdfError);
-            throw new Error('Failed to process PDF file');
-          }
-        } else {
-          // For text files, read as text
-          content = await file.text();
+        // Only text files are supported
+        if (!file.name.endsWith('.txt') && file.type !== 'text/plain') {
+          toast({
+            title: "Ошибка",
+            description: "Поддерживаются только текстовые файлы (.txt)",
+            variant: "destructive",
+          });
+          event.target.value = '';
+          setIsUploadingFile(false);
+          return;
         }
+        
+        const content = await file.text();
+        const fileType = 'text/plain';
         
 
         // Upload to backend
@@ -206,9 +197,8 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
           const newDoc: Document = {
             id: data.id.toString(),
             name: file.name,
-            content: file.type === 'application/pdf' ? '[PDF Document]' : content, // Store full content for chat context
-            uploadDate: new Date(),
-            size: `${(file.size / 1024).toFixed(1)} KB`,
+            content: content,
+            uploadDate: new Date()
           };
           setDocuments(prev => [...prev, newDoc]);
           toast({

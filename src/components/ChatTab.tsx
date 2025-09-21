@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { Message, Document } from '@/types';
+import { SourceReferences } from '@/components/SourceReferences';
 
 interface ChatTabProps {
   messages: Message[];
@@ -50,17 +51,8 @@ export function ChatTab({
                         : 'bg-card border'
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
-                    {message.sources && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {message.sources.map((source, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            <Icon name="FileText" size={10} className="mr-1" />
-                            {source}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    {message.sources && <SourceReferences sources={message.sources as any} />}
                     <p className="text-xs opacity-70 mt-1">
                       {message.timestamp.toLocaleTimeString()}
                     </p>
