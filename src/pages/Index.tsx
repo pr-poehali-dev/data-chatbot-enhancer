@@ -7,6 +7,7 @@ import AppHeader from '@/components/AppHeader';
 import ChatTab from '@/components/ChatTab';
 import LibraryTab from '@/components/LibraryTab';
 import { Message, Document } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface IndexProps {
   auth: {
@@ -19,6 +20,7 @@ interface IndexProps {
 }
 
 function Index({ auth, onLogin, onLogout }: IndexProps) {
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -209,15 +211,26 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
             size: `${(file.size / 1024).toFixed(1)} KB`,
           };
           setDocuments(prev => [...prev, newDoc]);
-          alert('Документ успешно загружен!');
+          toast({
+            title: "Успех!",
+            description: "Документ успешно загружен",
+          });
         } else {
           const errorData = await response.json().catch(() => ({}));
           console.error('Upload failed:', response.status, errorData);
-          alert(`Ошибка загрузки: ${errorData.error || response.statusText}`);
+          toast({
+            title: "Ошибка",
+            description: errorData.error || response.statusText || "Не удалось загрузить документ",
+            variant: "destructive",
+          });
         }
       } catch (error) {
         console.error('Error uploading file:', error);
-        alert('Ошибка загрузки файла. Попробуйте еще раз.');
+        toast({
+          title: "Ошибка",
+          description: "Не удалось загрузить файл. Попробуйте еще раз.",
+          variant: "destructive",
+        });
       } finally {
         setIsUploadingFile(false);
         // Reset file input
