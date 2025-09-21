@@ -107,3 +107,12 @@
       sans-serif;
   }
 }
+
+/* Custom tabs styling for dark theme */
+[data-radix-collection-item][data-state="active"] {
+  @apply bg-blue-600 text-white shadow-sm;
+}
+
+[data-radix-collection-item][data-state="inactive"] {
+  @apply hover:bg-gray-800 text-gray-400;
+}
