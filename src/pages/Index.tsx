@@ -164,7 +164,18 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
       }
       setIsUploadingFile(true);
       try {
-        const text = await file.text();
+        let content = '';
+        let fileType = file.type || 'text/plain';
+        
+        if (file.type === 'application/pdf') {
+          // For PDF files, we'll send the base64 content to backend
+          const arrayBuffer = await file.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+          content = base64;
+        } else {
+          // For text files, read as text
+          content = await file.text();
+        }
         
 
         // Upload to backend
@@ -176,8 +187,8 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
           },
           body: JSON.stringify({
             name: file.name,
-            content: text,
-            file_type: file.type || 'text/plain'
+            content: content,
+            file_type: fileType
           })
         });
 
@@ -186,7 +197,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
           const newDoc: Document = {
             id: data.id,
             name: file.name,
-            content: text, // Store full content for chat context
+            content: file.type === 'application/pdf' ? '[PDF Document]' : content, // Store full content for chat context
             uploadDate: new Date(),
             size: `${(file.size / 1024).toFixed(1)} KB`,
           };

@@ -2,8 +2,10 @@ import json
 import os
 import psycopg2
 import psycopg2.extras
+import requests
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+import base64
 
 def get_db_connection():
     """Get database connection using environment variable"""
@@ -12,14 +14,97 @@ def get_db_connection():
         raise Exception("DATABASE_URL not configured")
     return psycopg2.connect(database_url)
 
+def extract_text_from_pdf(base64_content: str) -> str:
+    """Extract text from PDF using OpenAI API"""
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    if not openai_api_key:
+        print("[WARN] No OpenAI API key, cannot extract PDF text")
+        return "[PDF content - text extraction unavailable]"
+    
+    try:
+        headers = {
+            "Authorization": f"Bearer {openai_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        # Use GPT-4 Vision to extract text from PDF
+        data = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "Extract all text content from this document. Return only the text, no formatting or explanations."
+                },
+                {
+                    "role": "user",
+                    "content": f"Extract text from this PDF document (base64): {base64_content[:1000]}..."  # Truncate for prompt
+                }
+            ],
+            "max_tokens": 4000
+        }
+        
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=data,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            text = response.json()['choices'][0]['message']['content']
+            print(f"[INFO] Extracted {len(text)} characters from PDF")
+            return text
+        else:
+            print(f"[ERROR] OpenAI API error: {response.status_code}")
+            return "[PDF content - extraction failed]"
+    except Exception as e:
+        print(f"[ERROR] PDF extraction failed: {e}")
+        return "[PDF content - extraction error]"
+
+def create_embedding(text: str) -> Optional[List[float]]:
+    """Create embedding for text using OpenAI API"""
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    if not openai_api_key:
+        print("[INFO] No OpenAI API key, skipping embedding")
+        return None
+    
+    try:
+        headers = {
+            "Authorization": f"Bearer {openai_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": "text-embedding-3-small",
+            "input": text[:8000]  # Limit text length
+        }
+        
+        response = requests.post(
+            "https://api.openai.com/v1/embeddings",
+            headers=headers,
+            json=data,
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            embedding = response.json()['data'][0]['embedding']
+            print(f"[INFO] Created embedding with {len(embedding)} dimensions")
+            return embedding
+        else:
+            print(f"[ERROR] OpenAI API error: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"[ERROR] Failed to create embedding: {e}")
+        return None
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
-    Business: Simple document storage test
+    Business: Document storage with PDF support and embeddings
     Args: event - HTTP event with method, headers, body
           context - function context
     Returns: HTTP response dict
     """
-    print(f"[DEBUG] Full event: {json.dumps(event)}")
+    print(f"[DEBUG] Request received")
     
     method = event.get('httpMethod', 'GET')
     headers = event.get('headers', {})
@@ -83,10 +168,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             documents = []
             for row in cursor.fetchall():
+                # Don't send base64 content to frontend for PDFs
+                content = row['content']
+                if row['file_type'] == 'application/pdf' and content.startswith('[PDF:'):
+                    content = '[PDF Document]'
+                    
                 documents.append({
                     'id': row['id'],
                     'name': row['name'],
-                    'content': row['content'],
+                    'content': content,
                     'file_type': row['file_type'],
                     'created_at': row['created_at'].isoformat() if row['created_at'] else None,
                     'has_embedding': row['has_embedding']
@@ -107,20 +197,49 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
         elif method == 'POST':
             body = json.loads(event.get('body', '{}'))
-            print(f"[DEBUG] POST body: {body}")
+            print(f"[DEBUG] Upload request for user {user_id}")
+            
+            name = body.get('name', 'Untitled')
+            content = body.get('content', '')
+            file_type = body.get('file_type', 'text/plain')
+            
+            # Process PDF files
+            text_for_embedding = content
+            if file_type == 'application/pdf':
+                # Store base64 in content, but extract text for embedding
+                text_for_embedding = extract_text_from_pdf(content)
+                # Mark content as PDF with base64
+                content = f"[PDF:{content[:100]}...]"  # Store truncated for reference
+            
+            # Create embedding from text
+            embedding = create_embedding(text_for_embedding)
             
             # Insert document into database
-            cursor.execute("""
-                INSERT INTO documents (name, content, file_type, created_at, user_id)
-                VALUES (%s, %s, %s, %s, %s)
-                RETURNING id
-            """, (
-                body.get('name', 'Untitled'),
-                body.get('content', ''),
-                body.get('file_type', 'text/plain'),
-                datetime.now(),
-                user_id
-            ))
+            if embedding:
+                cursor.execute("""
+                    INSERT INTO documents (name, content, file_type, embedding, created_at, user_id)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                """, (
+                    name,
+                    content,
+                    file_type,
+                    json.dumps(embedding),
+                    datetime.now(),
+                    user_id
+                ))
+            else:
+                cursor.execute("""
+                    INSERT INTO documents (name, content, file_type, created_at, user_id)
+                    VALUES (%s, %s, %s, %s, %s)
+                    RETURNING id
+                """, (
+                    name,
+                    content,
+                    file_type,
+                    datetime.now(),
+                    user_id
+                ))
             
             doc_id = cursor.fetchone()['id']
             conn.commit()
@@ -139,7 +258,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({
                     'id': doc_id,
                     'message': 'Document uploaded successfully',
-                    'has_embedding': False
+                    'has_embedding': embedding is not None
                 }),
                 'isBase64Encoded': False
             }

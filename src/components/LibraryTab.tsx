@@ -115,7 +115,10 @@ export function LibraryTab({
             
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">
-                {documents.reduce((acc, doc) => acc + parseFloat(doc.size), 0).toFixed(1)}
+                {documents.reduce((acc, doc) => {
+                  const bytes = new Blob([doc.content]).size;
+                  return acc + bytes / 1024;
+                }, 0).toFixed(1)}
               </div>
               <p className="text-sm text-gray-600">Total Size (KB)</p>
             </div>
