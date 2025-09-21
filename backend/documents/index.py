@@ -133,18 +133,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # Extract user_id from Authorization header
     user_id = None
     auth_header = headers.get('Authorization', '') or headers.get('authorization', '')
+    print(f"Auth header: {auth_header}")
+    print(f"Headers: {headers}")
     if auth_header:
         # Expecting format: "Bearer user_id"
         parts = auth_header.split(' ')
         if len(parts) == 2 and parts[0] == 'Bearer':
             try:
                 user_id = int(parts[1])
-            except:
+                print(f"Extracted user_id: {user_id}")
+            except Exception as e:
+                print(f"Error parsing user_id: {e}, value: {parts[1]}")
                 pass
     
     if not user_id:
         return {
-            'statusCode': 401,
+            'statusCode': 403,
             'headers': {'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({'error': 'Unauthorized - please provide user_id in Authorization header'})
         }

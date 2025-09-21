@@ -190,7 +190,8 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
           };
           setDocuments(prev => [...prev, newDoc]);
         } else {
-          console.error('Upload failed:', response.statusText);
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Upload failed:', response.status, errorData);
         }
       } catch (error) {
         console.error('Error uploading file:', error);
