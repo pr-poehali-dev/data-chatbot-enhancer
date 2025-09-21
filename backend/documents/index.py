@@ -271,7 +271,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             print(f"[DEBUG] Upload request for user {user_id}")
             
             conn = get_db_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
             
             name = body.get('name', 'Untitled')
             content = body.get('content', '')
@@ -346,6 +346,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
         elif method == 'DELETE':
             # Delete document
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
             query_params = event.get('queryStringParameters', {}) or {}
             doc_id = query_params.get('id')
             
