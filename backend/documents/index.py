@@ -239,10 +239,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             documents = []
             for row in cursor.fetchall():
-                # Don't send base64 content to frontend for PDFs
-                content = row['content']
-                if row['file_type'] == 'application/pdf' and content.startswith('[PDF:'):
-                    content = '[PDF Document]'
+                # No content stored anymore
+                content = '[No content - embedding only]'
                     
                 documents.append({
                     'id': row['id'],
@@ -279,15 +277,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             # Process content for embedding
             text_for_embedding = content
-            content_to_save = ""
             
             if file_type == 'application/pdf':
                 # Extract text from PDF for embedding
                 text_for_embedding = extract_text_from_pdf(content)
-                content_to_save = text_for_embedding  # Save full extracted text
-            else:
-                # For text files, use content directly
-                content_to_save = content  # Save full content
+            
+            # We'll only store metadata, not content
             
             # Create embedding from text
             embedding = create_embedding(text_for_embedding)
@@ -308,14 +303,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            # Insert document with embedding and preview only
+            # Insert document with embedding only (no content)
             cursor.execute("""
                 INSERT INTO documents (name, content, file_type, embedding, created_at, user_id)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 name,
-                content_to_save,  # Store full content for search
+                '',  # No content stored
                 file_type,
                 json.dumps(embedding),
                 datetime.now(),
