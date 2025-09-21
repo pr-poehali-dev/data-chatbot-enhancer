@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Cookies from 'js-cookie';
+import TopBanner from "@/components/TopBanner";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <TopBanner />
         <Toaster />
         <Sonner />
         <BrowserRouter>
