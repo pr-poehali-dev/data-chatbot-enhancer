@@ -52,7 +52,7 @@ function Index() {
   
   const [currentMessage, setCurrentMessage] = useState('');
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!currentMessage.trim()) return;
 
     const userMessage: Message = {
@@ -63,38 +63,112 @@ function Index() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageToSend = currentMessage;
+    setCurrentMessage('');
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      // Prepare conversation history
+      const conversationHistory = messages.slice(-10).map(msg => ({
+        role: msg.isUser ? 'user' : 'assistant',
+        content: msg.content
+      }));
+
+      // Get document contents for context
+      const documentContents = documents.map(doc => `${doc.name}: ${doc.content}`);
+
+      const response = await fetch('https://functions.poehali.dev/f4577fe4-cb11-4571-b7e5-32e9c0d072a2', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: messageToSend,
+          conversation_history: conversationHistory,
+          documents: documentContents
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: `Based on your uploaded documents, I can help you with that. This response is generated from your knowledge base including "${documents[0].name}" and other relevant materials.`,
+        content: data.response || 'Sorry, I encountered an error processing your request.',
         isUser: false,
         timestamp: new Date(),
-        sources: [documents[0].name, documents[1].name],
+        sources: data.sources || [],
       };
+
       setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
-
-    setCurrentMessage('');
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const newDoc: Document = {
-        id: Date.now().toString(),
-        name: file.name,
-        content: 'File content would be processed here...',
-        uploadDate: new Date(),
-        size: `${(file.size / 1024).toFixed(1)} KB`,
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'Sorry, I\'m having trouble connecting to the AI service. Please make sure the OpenAI API key is configured in the project settings.',
+        isUser: false,
+        timestamp: new Date(),
       };
-      setDocuments(prev => [...prev, newDoc]);
+
+      setMessages(prev => [...prev, errorMessage]);
     }
   };
 
-  const deleteDocument = (id: string) => {
-    setDocuments(prev => prev.filter(doc => doc.id !== id));
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const text = await file.text();
+        
+        // Upload to backend
+        const response = await fetch('https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: file.name,
+            content: text,
+            file_type: file.type || 'text/plain'
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const newDoc: Document = {
+            id: data.id,
+            name: file.name,
+            content: text.slice(0, 500) + (text.length > 500 ? '...' : ''),
+            uploadDate: new Date(),
+            size: `${(file.size / 1024).toFixed(1)} KB`,
+          };
+          setDocuments(prev => [...prev, newDoc]);
+        } else {
+          console.error('Upload failed:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+      }
+    }
+  };
+
+  const deleteDocument = async (id: string) => {
+    try {
+      const response = await fetch(`https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setDocuments(prev => prev.filter(doc => doc.id !== id));
+      } else {
+        console.error('Delete failed:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error deleting document:', error);
+    }
   };
 
   return (

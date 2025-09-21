@@ -1,0 +1,31 @@
+{
+  "tests": [
+    {
+      "name": "Test get documents",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "documents": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test upload document",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "name": "test-document.txt",
+        "content": "This is a test document content for embedding generation.",
+        "file_type": "text/plain"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "id": "string",
+        "message": "string",
+        "has_embedding": "boolean"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "tests": [
+    {
+      "name": "Test chat with message",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "message": "Hello, how are you?",
+        "conversation_history": [],
+        "documents": []
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "response": "string",
+        "sources": "array",
+        "request_id": "string",
+        "model_used": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test chat with document context",
+      "method": "POST", 
+      "path": "/",
+      "body": {
+        "message": "What does this document say?",
+        "conversation_history": [],
+        "documents": ["Sample document content about AI technology"]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "response": "string",
+        "sources": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
