@@ -32,7 +32,7 @@ export function ChatTab({
       
       {/* Main chat area */}
       <div className="lg:col-span-3">
-        <Card className="h-[calc(100dvh-158px)] sm:h-[600px] flex flex-col">
+        <Card className="h-[calc(100dvh-198px)] sm:h-[600px] flex flex-col">
           <CardHeader className="border-b py-3 sm:py-4">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Icon name="Bot" size={18} className="sm:w-5 sm:h-5" />
