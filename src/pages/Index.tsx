@@ -7,6 +7,7 @@ import AppHeader from '@/components/AppHeader';
 import ChatTab from '@/components/ChatTab';
 import LibraryTab from '@/components/LibraryTab';
 import FileUploadPreview from '@/components/FileUploadPreview';
+import Footer from '@/components/Footer';
 import { Message, Document } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -268,7 +269,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground pb-10 sm:pb-12">
       <div className="max-w-7xl mx-auto p-4 sm:p-6">
         <AppHeader 
           auth={auth}
@@ -335,6 +336,8 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
         }}
         onConfirm={handleFilePreviewConfirm}
       />
+      
+      <Footer />
     </div>
   );
 }

@@ -17,7 +17,7 @@ export function LibraryTab({
   onDeleteDocument
 }: LibraryTabProps) {
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6 h-[calc(100vh-250px)] sm:h-[calc(100vh-16rem)]">
+    <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6 h-[calc(100vh-300px)] sm:h-[calc(100vh-18rem)]">
       <div className="lg:col-span-2 flex flex-col h-full">
         <Card className="flex-1 flex flex-col">
           <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-3 sm:py-4">

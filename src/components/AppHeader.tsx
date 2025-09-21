@@ -14,14 +14,14 @@ interface AppHeaderProps {
 
 export function AppHeader({ auth, onLogout, onShowVideoModal, onShowLoginModal }: AppHeaderProps) {
   return (
-    <div className="mb-4 sm:mb-8">
+    <div className="mb-4 sm:mb-8 flex items-center justify-between gap-3 sm:gap-4">
       <div className="flex items-center gap-3 sm:gap-4">
         <img 
           src="https://cdn.poehali.dev/files/93f128c7-107b-4e97-8627-7bd8c980d13b.png" 
           alt="Matthew McConaughey"
           className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover"
         />
-        <div className="flex-1">
+        <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Alright AI</h1>
           <p className="text-sm sm:text-base text-muted-foreground flex items-center gap-1">
             Matthew's personal app
@@ -35,31 +35,18 @@ export function AppHeader({ auth, onLogout, onShowVideoModal, onShowLoginModal }
             </Button>
           </p>
         </div>
-        
-        {/* Mobile menu button or simplified auth */}
-        <div className="sm:hidden">
-          {auth ? (
-            <Button variant="ghost" size="icon" onClick={onLogout}>
-              <Icon name="LogOut" size={20} />
-            </Button>
-          ) : (
-            <Button variant="default" size="icon" onClick={onShowLoginModal}>
-              <Icon name="LogIn" size={20} />
-            </Button>
-          )}
-        </div>
       </div>
       
-      {/* Desktop auth section */}
-      <div className="hidden sm:flex items-center gap-4 mt-4">
+      {/* Auth section */}
+      <div className="flex items-center gap-2 sm:gap-4">
         {auth ? (
           <>
-            <span className="text-sm text-muted-foreground">
+            <span className="hidden sm:inline text-sm text-muted-foreground">
               Welcome, {auth.username}
             </span>
-            <Button variant="ghost" size="sm" onClick={onLogout}>
-              <Icon name="LogOut" size={16} className="mr-2" />
-              Logout
+            <Button variant="ghost" size="sm" onClick={onLogout} className="sm:flex items-center gap-2">
+              <Icon name="LogOut" size={16} />
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </>
         ) : (
@@ -68,26 +55,18 @@ export function AppHeader({ auth, onLogout, onShowVideoModal, onShowLoginModal }
               variant="outline" 
               size="sm" 
               onClick={onShowVideoModal}
+              className="hidden sm:flex items-center gap-2"
             >
-              <Icon name="Info" size={16} className="mr-2" />
+              <Icon name="Info" size={16} />
               What's this app about?
             </Button>
-            <Button variant="default" size="sm" onClick={onShowLoginModal}>
-              <Icon name="LogIn" size={16} className="mr-2" />
-              Sign In
+            <Button variant="default" size="sm" onClick={onShowLoginModal} className="flex items-center gap-2">
+              <Icon name="LogIn" size={16} />
+              <span className="hidden sm:inline">Sign In</span>
             </Button>
           </>
         )}
       </div>
-      
-      {/* Mobile welcome message */}
-      {auth && (
-        <div className="sm:hidden mt-2">
-          <span className="text-xs text-muted-foreground">
-            Welcome, {auth.username}
-          </span>
-        </div>
-      )}
     </div>
   );
 }
