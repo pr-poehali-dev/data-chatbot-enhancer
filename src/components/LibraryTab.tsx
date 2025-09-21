@@ -25,7 +25,7 @@ export function LibraryTab({
             <div className="relative">
               <input
                 type="file"
-                accept=".txt,.pdf,.doc,.docx"
+                accept=".txt,.doc,.docx"
                 onChange={onFileUpload}
                 className="absolute inset-0 opacity-0 cursor-pointer"
                 disabled={isUploadingFile || documents.length >= 20}
@@ -57,7 +57,7 @@ export function LibraryTab({
                   <div className="relative inline-block">
                     <input
                       type="file"
-                      accept=".txt,.pdf,.doc,.docx"
+                      accept=".txt,.doc,.docx"
                       onChange={onFileUpload}
                       className="absolute inset-0 opacity-0 cursor-pointer"
                       disabled={isUploadingFile || documents.length >= 20}
@@ -132,10 +132,6 @@ export function LibraryTab({
                 <div className="flex items-center gap-2">
                   <Icon name="FileText" size={12} />
                   Text Files (.txt)
-                </div>
-                <div className="flex items-center gap-2">
-                  <Icon name="File" size={12} />
-                  PDF Documents (.pdf)
                 </div>
                 <div className="flex items-center gap-2">
                   <Icon name="FileText" size={12} />
