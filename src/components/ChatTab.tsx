@@ -27,12 +27,12 @@ export function ChatTab({
   onSendMessage
 }: ChatTabProps) {
   return (
-    <div className="flex flex-col lg:grid lg:grid-cols-4 gap-4 lg:gap-6 flex-1">
+    <div className="flex flex-col lg:grid lg:grid-cols-4 gap-4 lg:gap-6">
 
       
       {/* Main chat area */}
-      <div className="lg:col-span-3 flex-1 flex flex-col">
-        <Card className="h-full sm:h-[600px] flex flex-col">
+      <div className="lg:col-span-3">
+        <Card className="h-[calc(100vh-140px)] sm:h-[600px] flex flex-col">
           <CardHeader className="border-b py-3 sm:py-4">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Icon name="Bot" size={18} className="sm:w-5 sm:h-5" />

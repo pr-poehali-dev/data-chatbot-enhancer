@@ -270,7 +270,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <div className="flex-1 max-w-7xl mx-auto p-4 sm:p-6 w-full flex flex-col">
+      <div className="flex-1 max-w-7xl mx-auto p-4 sm:p-6 w-full">
         <AppHeader 
           auth={auth}
           onLogout={onLogout}
@@ -278,7 +278,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
           onShowLoginModal={() => setShowLoginModal(true)}
         />
 
-        <Tabs defaultValue="chat" className="w-full flex-1 flex flex-col">
+        <Tabs defaultValue="chat" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="chat" className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
               <Icon name="MessageCircle" size={14} className="sm:w-4 sm:h-4" />
@@ -290,7 +290,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="chat" className="mt-4 sm:mt-6 flex-1 flex flex-col">
+          <TabsContent value="chat" className="mt-4 sm:mt-6">
             <ChatTab
               messages={messages}
               documents={documents}
