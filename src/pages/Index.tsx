@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,24 +33,36 @@ function Index() {
     },
   ]);
   
-  const [documents, setDocuments] = useState<Document[]>([
-    {
-      id: '1',
-      name: 'Getting Started Guide.txt',
-      content: 'This is a sample document about how to use this AI assistant...',
-      uploadDate: new Date(),
-      size: '2.4 KB',
-    },
-    {
-      id: '2',
-      name: 'Project Notes.txt',
-      content: 'Important notes about the current project...',
-      uploadDate: new Date(),
-      size: '1.8 KB',
-    },
-  ]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   
   const [currentMessage, setCurrentMessage] = useState('');
+
+  // Load documents from database on component mount
+  useEffect(() => {
+    const loadDocuments = async () => {
+      try {
+        const response = await fetch('https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd', {
+          method: 'GET',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const formattedDocs = data.documents.map((doc: any) => ({
+            id: doc.id.toString(),
+            name: doc.name,
+            content: doc.content,
+            uploadDate: new Date(doc.created_at),
+            size: doc.size,
+          }));
+          setDocuments(formattedDocs);
+        }
+      } catch (error) {
+        console.error('Error loading documents:', error);
+      }
+    };
+
+    loadDocuments();
+  }, []);
 
   const sendMessage = async () => {
     if (!currentMessage.trim()) return;
@@ -73,8 +85,11 @@ function Index() {
         content: msg.content
       }));
 
-      // Get document contents for context
-      const documentContents = documents.map(doc => `${doc.name}: ${doc.content}`);
+      // Get document contents for context - use full content for better context
+      const documentContents = documents.map(doc => {
+        // For chat context, we need the full content, not the truncated version
+        return `${doc.name}: ${doc.content}`;
+      });
 
       const response = await fetch('https://functions.poehali.dev/f4577fe4-cb11-4571-b7e5-32e9c0d072a2', {
         method: 'POST',
@@ -141,7 +156,7 @@ function Index() {
           const newDoc: Document = {
             id: data.id,
             name: file.name,
-            content: text.slice(0, 500) + (text.length > 500 ? '...' : ''),
+            content: text, // Store full content for chat context
             uploadDate: new Date(),
             size: `${(file.size / 1024).toFixed(1)} KB`,
           };
@@ -315,6 +330,9 @@ function Index() {
                               <p className="font-medium text-sm">{doc.name}</p>
                               <p className="text-xs text-gray-500">
                                 {doc.size} • {doc.uploadDate.toLocaleDateString()}
+                              </p>
+                              <p className="text-xs text-gray-400 truncate max-w-[300px]">
+                                {doc.content.slice(0, 100)}...
                               </p>
                             </div>
                           </div>
