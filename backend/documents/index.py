@@ -127,6 +127,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
           context - object with request_id for tracking
     Returns: HTTP response with document operations results
     """
+    print(f"[DEBUG] Received event: {json.dumps(event)}")
     method: str = event.get('httpMethod', 'GET')
     headers = event.get('headers', {})
     
