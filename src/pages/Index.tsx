@@ -211,7 +211,7 @@ function Index() {
             className="w-16 h-16 rounded-full object-cover"
           />
           <div>
-            <h1 className="text-3xl font-bold mb-1">Alright, Alright, Alright AI</h1>
+            <h1 className="text-3xl font-bold mb-1">Alright AI</h1>
             <p className="text-muted-foreground">Matthew's personal app</p>
           </div>
         </div>
