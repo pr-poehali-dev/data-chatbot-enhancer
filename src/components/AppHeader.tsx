@@ -23,7 +23,17 @@ export function AppHeader({ auth, onLogout, onShowVideoModal, onShowLoginModal }
         />
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Alright AI</h1>
-          <p className="text-sm sm:text-base text-muted-foreground flex items-center gap-1">Matthew's dreamed app</p>
+          <p className="text-sm sm:text-base text-muted-foreground flex items-center gap-1">
+            Matthew's personal app
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="h-4 w-4 sm:h-5 sm:w-5 p-0"
+              onClick={onShowVideoModal}
+            >
+              <Icon name="CircleHelp" size={12} />
+            </Button>
+          </p>
         </div>
       </div>
       
