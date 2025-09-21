@@ -46,7 +46,29 @@ export function LibraryTab({
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {documents.map((doc) => (
+              {documents.length === 0 ? (
+                <div className="text-center py-12">
+                  <Icon name="FileX" size={48} className="mx-auto text-muted-foreground/30 mb-4" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">No documents yet</h3>
+                  <p className="text-sm text-muted-foreground/60 mb-6">
+                    Upload your first document to start building your knowledge base
+                  </p>
+                  <div className="relative inline-block">
+                    <input
+                      type="file"
+                      accept=".txt,.pdf,.doc,.docx"
+                      onChange={onFileUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      disabled={isUploadingFile}
+                    />
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Icon name="Upload" size={16} />
+                      Choose File
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                documents.map((doc) => (
                 <div
                   key={doc.id}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/10 transition-all duration-200 animate-slide-up"
@@ -76,7 +98,8 @@ export function LibraryTab({
                     </Button>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

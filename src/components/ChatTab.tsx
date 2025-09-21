@@ -110,12 +110,24 @@ export function ChatTab({
                 {documents.length} documents loaded
               </p>
               <div className="flex-1 overflow-y-auto space-y-1 pr-2">
-                {documents.map((doc) => (
-                  <div key={doc.id} className="text-xs p-2 bg-accent/10 rounded flex items-center gap-2">
-                    <Icon name="FileText" size={12} className="flex-shrink-0" />
-                    <span className="truncate">{doc.name}</span>
+                {documents.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Icon name="FolderOpen" size={32} className="mx-auto text-muted-foreground/20 mb-3" />
+                    <p className="text-xs text-muted-foreground/60">
+                      No documents uploaded yet
+                    </p>
+                    <p className="text-xs text-muted-foreground/40 mt-1">
+                      Go to Library tab to upload
+                    </p>
                   </div>
-                ))}
+                ) : (
+                  documents.map((doc) => (
+                    <div key={doc.id} className="text-xs p-2 bg-accent/10 rounded flex items-center gap-2">
+                      <Icon name="FileText" size={12} className="flex-shrink-0" />
+                      <span className="truncate">{doc.name}</span>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </CardContent>
