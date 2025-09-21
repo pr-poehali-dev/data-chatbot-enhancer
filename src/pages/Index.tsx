@@ -42,13 +42,12 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
   const loadDocuments = async () => {
     if (!auth) return;
     
-    console.log('Loading documents with auth:', auth);
-    
+
     try {
       const response = await fetch('https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${auth.userId}`
+          'X-User-Id': auth.userId.toString()
         }
       });
 
@@ -167,15 +166,13 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
       try {
         const text = await file.text();
         
-        console.log('Uploading with auth:', auth);
-        console.log('Authorization header:', `Bearer ${auth.userId}`);
-        
+
         // Upload to backend
         const response = await fetch('https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${auth.userId}`
+            'X-User-Id': auth.userId.toString()
           },
           body: JSON.stringify({
             name: file.name,
@@ -211,7 +208,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
       const response = await fetch(`https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd?id=${id}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${auth?.userId}`
+          'X-User-Id': auth?.userId?.toString() || ''
         }
       });
 

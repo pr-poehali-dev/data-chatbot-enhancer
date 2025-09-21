@@ -130,17 +130,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
     headers = event.get('headers', {})
     
-    # Extract user_id from Authorization header
+    # Extract user_id from custom header to avoid Yandex Cloud auth conflicts
     user_id = None
-    auth_header = headers.get('Authorization', '') or headers.get('authorization', '')
-    if auth_header:
-        # Expecting format: "Bearer user_id"
-        parts = auth_header.split(' ')
-        if len(parts) == 2 and parts[0] == 'Bearer':
-            try:
-                user_id = int(parts[1])
-            except:
-                pass
+    # Try custom header first
+    user_id_header = headers.get('X-User-Id', '') or headers.get('x-user-id', '')
+    if user_id_header:
+        try:
+            user_id = int(user_id_header)
+        except:
+            pass
     
     if not user_id:
         return {
@@ -149,7 +147,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'body': json.dumps({'error': 'Unauthorized - please provide user_id in Authorization header'}),
+            'body': json.dumps({'error': 'Unauthorized - please provide user_id in X-User-Id header'}),
             'isBase64Encoded': False
         }
     
@@ -160,7 +158,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-User-Id',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
