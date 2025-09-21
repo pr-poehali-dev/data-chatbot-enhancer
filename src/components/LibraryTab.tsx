@@ -115,16 +115,7 @@ export function LibraryTab({
               <p className="text-xs text-muted-foreground mt-1">Max 20 files</p>
             </div>
             
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
-                {documents.reduce((acc, doc) => {
-                  const bytes = new Blob([doc.content]).size;
-                  return acc + bytes / 1024 / 1024;
-                }, 0).toFixed(1)} MB
-              </div>
-              <p className="text-sm text-gray-600">Total Size</p>
-              <p className="text-xs text-muted-foreground mt-1">Max 5MB per file</p>
-            </div>
+
 
             <div className="pt-4 border-t">
               <h4 className="font-medium mb-2">Supported Formats</h4>
