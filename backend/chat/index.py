@@ -24,8 +24,11 @@ def get_db_connection():
 
 def create_embedding(text: str) -> Optional[List[float]]:
     """Create embedding for text query"""
+    print(f"[DEBUG] Creating embedding for text: '{text[:100]}...'")
+    
     openai_api_key = os.getenv('OPENAI_API_KEY')
     if not openai_api_key:
+        print("[ERROR] No OpenAI API key found")
         return None
     
     try:
@@ -36,7 +39,7 @@ def create_embedding(text: str) -> Optional[List[float]]:
         
         data = {
             "model": "text-embedding-3-small",
-            "input": text
+            "input": text[:8000]  # Limit text length
         }
         
         # Check if proxy is configured
@@ -47,6 +50,7 @@ def create_embedding(text: str) -> Optional[List[float]]:
                 'http': proxy_url,
                 'https': proxy_url
             }
+            print("[DEBUG] Using proxy for OpenAI request")
         
         response = requests.post(
             "https://api.openai.com/v1/embeddings",
@@ -57,9 +61,11 @@ def create_embedding(text: str) -> Optional[List[float]]:
         )
         
         if response.status_code == 200:
-            return response.json()['data'][0]['embedding']
+            embedding = response.json()['data'][0]['embedding']
+            print(f"[DEBUG] Embedding created successfully, length: {len(embedding)}")
+            return embedding
         else:
-            print(f"[ERROR] OpenAI API error: {response.status_code}")
+            print(f"[ERROR] OpenAI API error: {response.status_code}, {response.text}")
             return None
     except Exception as e:
         print(f"[ERROR] Failed to create embedding: {e}")
@@ -67,9 +73,14 @@ def create_embedding(text: str) -> Optional[List[float]]:
 
 def search_documents(query: str, user_id: int, limit: int = 5) -> List[Dict[str, Any]]:
     """Search user documents using vector similarity"""
+    print(f"[DEBUG] Starting document search for query: '{query}', user: {user_id}")
+    
     query_embedding = create_embedding(query)
     if not query_embedding:
+        print("[ERROR] Failed to create query embedding")
         return []
+    
+    print(f"[DEBUG] Query embedding created, length: {len(query_embedding)}")
     
     try:
         conn = get_db_connection()
@@ -82,8 +93,11 @@ def search_documents(query: str, user_id: int, limit: int = 5) -> List[Dict[str,
             WHERE embedding IS NOT NULL AND user_id = %s
         """, (user_id,))
         
+        documents = cursor.fetchall()
+        print(f"[DEBUG] Found {len(documents)} documents with embeddings for user {user_id}")
+        
         results = []
-        for row in cursor.fetchall():
+        for row in documents:
             # Calculate cosine similarity
             doc_embedding = json.loads(row['embedding'])
             
@@ -96,8 +110,10 @@ def search_documents(query: str, user_id: int, limit: int = 5) -> List[Dict[str,
             else:
                 similarity = 0
             
-            # Only include relevant documents (similarity > 0.7)
-            if similarity > 0.7:
+            print(f"[DEBUG] Document '{row['name']}' similarity: {similarity:.4f}")
+            
+            # Lower threshold to 0.5 for better recall
+            if similarity > 0.5:
                 results.append({
                     'name': row['name'],
                     'content': row['content'],
@@ -107,6 +123,8 @@ def search_documents(query: str, user_id: int, limit: int = 5) -> List[Dict[str,
         # Sort by similarity and return top results
         results.sort(key=lambda x: x['similarity'], reverse=True)
         results = results[:limit]
+        
+        print(f"[DEBUG] Returning {len(results)} relevant documents")
         
         cursor.close()
         conn.close()
@@ -210,6 +228,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     # Search relevant documents
     print(f"[INFO] Searching documents for user {user_id} with query: {message}")
     relevant_docs = search_documents(message, user_id)
+    print(f"[INFO] Found {len(relevant_docs)} relevant documents")
     
     # Prepare conversation with context
     messages = []
