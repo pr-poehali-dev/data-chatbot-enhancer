@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import Cookies from 'js-cookie';
+import LoginModal from '@/components/LoginModal';
 
 interface Message {
   id: string;
@@ -29,11 +30,12 @@ interface IndexProps {
     userId: number;
     username: string;
     token: string;
-  };
+  } | null;
+  onLogin: (userId: number, username: string, token: string) => void;
   onLogout: () => void;
 }
 
-function Index({ auth, onLogout }: IndexProps) {
+function Index({ auth, onLogin, onLogout }: IndexProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -44,6 +46,7 @@ function Index({ auth, onLogout }: IndexProps) {
   ]);
   
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
@@ -52,34 +55,38 @@ function Index({ auth, onLogout }: IndexProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load documents from database on component mount
-  useEffect(() => {
-    const loadDocuments = async () => {
-      try {
-        const response = await fetch('https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${auth.userId}`
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const formattedDocs = data.documents.map((doc: any) => ({
-            id: doc.id.toString(),
-            name: doc.name,
-            content: doc.content,
-            uploadDate: new Date(doc.created_at),
-            size: doc.size,
-          }));
-          setDocuments(formattedDocs);
+  const loadDocuments = async () => {
+    if (!auth) return;
+    
+    try {
+      const response = await fetch('https://functions.poehali.dev/390dcbc7-61d3-4aa3-a4e6-c4276be353cd', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${auth.userId}`
         }
-      } catch (error) {
-        console.error('Error loading documents:', error);
-      }
-    };
+      });
 
-    loadDocuments();
-  }, []);
+      if (response.ok) {
+        const data = await response.json();
+        const formattedDocs = data.documents.map((doc: any) => ({
+          id: doc.id.toString(),
+          name: doc.name,
+          content: doc.content,
+          uploadDate: new Date(doc.created_at),
+          size: doc.size,
+        }));
+        setDocuments(formattedDocs);
+      }
+    } catch (error) {
+      console.error('Error loading documents:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (auth) {
+      loadDocuments();
+    }
+  }, [auth]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -88,6 +95,11 @@ function Index({ auth, onLogout }: IndexProps) {
 
   const sendMessage = async () => {
     if (!currentMessage.trim()) return;
+    
+    if (!auth) {
+      setShowLoginModal(true);
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -160,6 +172,11 @@ function Index({ auth, onLogout }: IndexProps) {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (!auth) {
+        setShowLoginModal(true);
+        event.target.value = '';
+        return;
+      }
       setIsUploadingFile(true);
       try {
         const text = await file.text();
@@ -232,13 +249,22 @@ function Index({ auth, onLogout }: IndexProps) {
             <p className="text-muted-foreground">Matthew's personal app</p>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              Welcome, {auth.username}
-            </span>
-            <Button variant="ghost" size="sm" onClick={onLogout}>
-              <Icon name="LogOut" size={16} className="mr-2" />
-              Logout
-            </Button>
+            {auth ? (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  Welcome, {auth.username}
+                </span>
+                <Button variant="ghost" size="sm" onClick={onLogout}>
+                  <Icon name="LogOut" size={16} className="mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Button variant="default" size="sm" onClick={() => setShowLoginModal(true)}>
+                <Icon name="LogIn" size={16} className="mr-2" />
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
 
@@ -461,6 +487,15 @@ function Index({ auth, onLogout }: IndexProps) {
           </TabsContent>
         </Tabs>
       </div>
+      
+      <LoginModal 
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onLogin={(userId, username, token) => {
+          onLogin(userId, username, token);
+          setShowLoginModal(false);
+        }}
+      />
     </div>
   );
 }
