@@ -269,7 +269,7 @@ function Index({ auth, onLogin, onLogout }: IndexProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
       <div className="flex-1 max-w-7xl mx-auto p-4 sm:p-6 w-full">
         <AppHeader 
           auth={auth}

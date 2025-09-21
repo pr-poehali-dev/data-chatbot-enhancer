@@ -84,7 +84,7 @@ export function ChatTab({
                 value={currentMessage}
                 onChange={(e) => onMessageChange(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && onSendMessage()}
-                className="flex-1 text-sm"
+                className="flex-1 text-base"
               />
               <Button onClick={onSendMessage} size="default" className="px-3 sm:px-6" disabled={isLoading}>
                 <Icon name="Send" size={14} className="sm:w-4 sm:h-4" />
