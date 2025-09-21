@@ -26,7 +26,7 @@ export function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
 
     try {
       const endpoint = isSignUp ? 'register' : 'login';
-      const response = await fetch(`https://functions.poehali.dev/3dc15b1a-fe72-4cc0-9cb0-41db8b97bb62?action=${endpoint}`, {
+      const response = await fetch(`https://functions.poehali.dev/7cd2a343-9b16-48d5-a976-fa692138faf3?action=${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
