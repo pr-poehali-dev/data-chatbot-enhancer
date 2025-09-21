@@ -63,9 +63,9 @@ export function LoginModal({ isOpen, onClose, onLogin }: LoginModalProps) {
               className="w-12 h-12 rounded-full object-cover"
             />
             <div>
-              <DialogTitle>{isSignUp ? 'Create Account' : 'Welcome Back'}</DialogTitle>
+              <DialogTitle>{isSignUp ? 'Create Account' : 'Welcome to Alright AI'}</DialogTitle>
               <DialogDescription>
-                {isSignUp ? 'Sign up to start using the app' : 'Sign in to continue'}
+                {isSignUp ? 'Sign up to start using Alright AI' : 'Sign in to continue'}
               </DialogDescription>
             </div>
           </div>
