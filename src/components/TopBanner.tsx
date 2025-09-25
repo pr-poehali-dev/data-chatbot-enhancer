@@ -13,8 +13,7 @@ export default function TopBanner() {
       <div className="relative px-4 py-2 text-center">
         <p className="text-black text-sm font-medium flex items-center justify-center gap-2">
           <Icon name="Rocket" size={16} className="text-black" />
-          <span>Built in 2 hours with</span>
-          <span className="font-bold underline underline-offset-2">poehali.dev</span>
+          <span>Built in 2 hours with <span className="font-bold underline underline-offset-2">poehali.dev</span></span>
           <Icon name="ExternalLink" size={12} className="text-black" />
         </p>
       </div>
