@@ -36,7 +36,7 @@ export function ChatTab({
           <CardHeader className="border-b py-3 sm:py-4">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Icon name="Bot" size={18} className="sm:w-5 sm:h-5" />
-              <span className="hidden sm:inline">AI Помощник</span>
+              <span className="hidden sm:inline">AI Chat Assistant</span>
             </CardTitle>
           </CardHeader>
           
